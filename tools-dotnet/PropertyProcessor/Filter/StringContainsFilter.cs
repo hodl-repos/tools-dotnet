@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace tools_dotnet.PropertyProcessor.Filter
+﻿namespace tools_dotnet.PropertyProcessor.Filter
 {
     public class StringContainsFilter : IFilter<string, string>
     {

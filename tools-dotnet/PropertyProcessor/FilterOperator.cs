@@ -1,6 +1,7 @@
 ﻿using Enum.Ext;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using tools_dotnet.PropertyProcessor.Filter;
 
 namespace tools_dotnet.PropertyProcessor
@@ -12,12 +13,14 @@ namespace tools_dotnet.PropertyProcessor
         public static readonly FilterOperator Equal = new FilterOperator(1, "==",
             new EqualFilter<bool>(),
             new EqualFilter<long>(),
-            new EqualFilter<string>());
+            new EqualFilter<string>(),
+            new RegexFilter());
 
         public static readonly FilterOperator NotEqual = new FilterOperator(2, "!=",
             new NegateFilter<bool, bool>(new EqualFilter<bool>()),
             new NegateFilter<long, long>(new EqualFilter<long>()),
-            new NegateFilter<string, string>(new EqualFilter<string>()));
+            new NegateFilter<string, string>(new EqualFilter<string>()),
+            new NegateFilter<string, Regex>(new RegexFilter()));
 
         #endregion Mixed-Type
 
@@ -37,12 +40,16 @@ namespace tools_dotnet.PropertyProcessor
 
         public static readonly FilterOperator Contains = new FilterOperator(7, "@=",
                 GenerateStringCombinationFilter(new StringContainsFilter()),
+                new RegexFilter(),
+                new RegexArrayFilter(),
                 new ArrayContainsFilter<bool>(),
                 new ArrayContainsFilter<long>(),
                 new ArrayContainsFilter<string>());
 
         public static readonly FilterOperator NotContains = new FilterOperator(8, "!@=",
             GenerateAndNegateStringCombinationFilter(new StringContainsFilter()),
+            new NegateFilter<string, Regex>(new RegexFilter()),
+            new NegateFilter<ICollection<string>, Regex>(new RegexArrayFilter()),
             new NegateFilter<ICollection<bool>, bool>(new ArrayContainsFilter<bool>()),
             new NegateFilter<ICollection<long>, long>(new ArrayContainsFilter<long>()),
             new NegateFilter<ICollection<string>, string>(new ArrayContainsFilter<string>()));
