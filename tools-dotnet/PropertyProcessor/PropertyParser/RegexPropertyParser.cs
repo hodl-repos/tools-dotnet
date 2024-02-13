@@ -18,7 +18,7 @@ namespace tools_dotnet.PropertyProcessor.PropertyParser
             }
 
             return new Regex(value
-                .Remove(0, 2) //remove first "
+                .Remove(0, 2) //remove first R"
                 .Remove(value.Length - 3, 1) //remove last "
                 .Replace("\\\"", "\"")); //un-escape \" to "
         }
