@@ -6,17 +6,17 @@ using tools_dotnet.PropertyProcessor.Filter;
 
 namespace tools_dotnet.PropertyProcessor
 {
-    public sealed class FilterOperator : TypeSafeEnum<FilterOperator, int>
+    public sealed class FilterOperatorEnum : TypeSafeEnum<FilterOperatorEnum, int>
     {
         #region Mixed-Type
 
-        public static readonly FilterOperator Equal = new FilterOperator(1, "==",
+        public static readonly FilterOperatorEnum Equal = new FilterOperatorEnum(1, "==",
             new EqualFilter<bool>(),
             new EqualFilter<long>(),
             new EqualFilter<string>(),
             new RegexFilter());
 
-        public static readonly FilterOperator NotEqual = new FilterOperator(2, "!=",
+        public static readonly FilterOperatorEnum NotEqual = new FilterOperatorEnum(2, "!=",
             new NegateFilter<bool, bool>(new EqualFilter<bool>()),
             new NegateFilter<long, long>(new EqualFilter<long>()),
             new NegateFilter<string, string>(new EqualFilter<string>()),
@@ -26,19 +26,19 @@ namespace tools_dotnet.PropertyProcessor
 
         #region Long
 
-        public static readonly FilterOperator GreaterThan = new FilterOperator(3, ">", new LongFilter((lhs, rhs) => lhs > rhs));
+        public static readonly FilterOperatorEnum GreaterThan = new FilterOperatorEnum(3, ">", new LongFilter((lhs, rhs) => lhs > rhs));
 
-        public static readonly FilterOperator LessThan = new FilterOperator(4, "<", new LongFilter((lhs, rhs) => lhs < rhs));
+        public static readonly FilterOperatorEnum LessThan = new FilterOperatorEnum(4, "<", new LongFilter((lhs, rhs) => lhs < rhs));
 
-        public static readonly FilterOperator GreaterThanOrEqualTo = new FilterOperator(5, ">=", new LongFilter((lhs, rhs) => lhs >= rhs));
+        public static readonly FilterOperatorEnum GreaterThanOrEqualTo = new FilterOperatorEnum(5, ">=", new LongFilter((lhs, rhs) => lhs >= rhs));
 
-        public static readonly FilterOperator LessThanOrEqualTo = new FilterOperator(6, "<=", new LongFilter((lhs, rhs) => lhs <= rhs));
+        public static readonly FilterOperatorEnum LessThanOrEqualTo = new FilterOperatorEnum(6, "<=", new LongFilter((lhs, rhs) => lhs <= rhs));
 
         #endregion Long
 
         #region String|Mixed-Array:Case-Sensitive
 
-        public static readonly FilterOperator Contains = new FilterOperator(7, "@=",
+        public static readonly FilterOperatorEnum Contains = new FilterOperatorEnum(7, "@=",
                 GenerateStringCombinationFilter(new StringContainsFilter()),
                 new RegexFilter(),
                 new RegexArrayFilter(),
@@ -46,7 +46,7 @@ namespace tools_dotnet.PropertyProcessor
                 new ArrayContainsFilter<long>(),
                 new ArrayContainsFilter<string>());
 
-        public static readonly FilterOperator NotContains = new FilterOperator(8, "!@=",
+        public static readonly FilterOperatorEnum NotContains = new FilterOperatorEnum(8, "!@=",
             GenerateAndNegateStringCombinationFilter(new StringContainsFilter()),
             new NegateFilter<string, Regex>(new RegexFilter()),
             new NegateFilter<ICollection<string>, Regex>(new RegexArrayFilter()),
@@ -58,38 +58,38 @@ namespace tools_dotnet.PropertyProcessor
 
         #region String:Case-Sensitive
 
-        public static readonly FilterOperator StartsWith = new FilterOperator(9, "_=",
+        public static readonly FilterOperatorEnum StartsWith = new FilterOperatorEnum(9, "_=",
             GenerateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.StartsWith(rhs))));
 
-        public static readonly FilterOperator NotStartsWith = new FilterOperator(10, "!_=",
+        public static readonly FilterOperatorEnum NotStartsWith = new FilterOperatorEnum(10, "!_=",
             GenerateAndNegateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.StartsWith(rhs))));
 
-        public static readonly FilterOperator EndsWith = new FilterOperator(11, "_-=",
+        public static readonly FilterOperatorEnum EndsWith = new FilterOperatorEnum(11, "_-=",
             GenerateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.EndsWith(rhs))));
 
-        public static readonly FilterOperator NotEndsWith = new FilterOperator(12, "!_-=",
+        public static readonly FilterOperatorEnum NotEndsWith = new FilterOperatorEnum(12, "!_-=",
             GenerateAndNegateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.StartsWith(rhs))));
 
         #endregion String:Case-Sensitive
 
         #region String:Case-Insensitive
 
-        public static readonly FilterOperator CaseInsensitiveContains = new FilterOperator(13, "@=*",
+        public static readonly FilterOperatorEnum CaseInsensitiveContains = new FilterOperatorEnum(13, "@=*",
             GenerateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.ToLowerInvariant().Contains(rhs.ToLowerInvariant()))));
 
-        public static readonly FilterOperator CaseInsensitiveNotContains = new FilterOperator(14, "!@=*",
+        public static readonly FilterOperatorEnum CaseInsensitiveNotContains = new FilterOperatorEnum(14, "!@=*",
             GenerateAndNegateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.ToLowerInvariant().Contains(rhs.ToLowerInvariant()))));
 
-        public static readonly FilterOperator CaseInsensitiveStartsWith = new FilterOperator(15, "_=*",
+        public static readonly FilterOperatorEnum CaseInsensitiveStartsWith = new FilterOperatorEnum(15, "_=*",
             GenerateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.ToLowerInvariant().StartsWith(rhs.ToLowerInvariant()))));
 
-        public static readonly FilterOperator CaseInsensitiveNotStartsWith = new FilterOperator(16, "!_=*",
+        public static readonly FilterOperatorEnum CaseInsensitiveNotStartsWith = new FilterOperatorEnum(16, "!_=*",
             GenerateAndNegateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.ToLowerInvariant().StartsWith(rhs.ToLowerInvariant()))));
 
-        public static readonly FilterOperator CaseInsensitiveEndsWith = new FilterOperator(17, "_-=*",
+        public static readonly FilterOperatorEnum CaseInsensitiveEndsWith = new FilterOperatorEnum(17, "_-=*",
             GenerateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.ToLowerInvariant().EndsWith(rhs.ToLowerInvariant()))));
 
-        public static readonly FilterOperator CaseInsensitiveNotEndsWith = new FilterOperator(18, "!_-=*",
+        public static readonly FilterOperatorEnum CaseInsensitiveNotEndsWith = new FilterOperatorEnum(18, "!_-=*",
             GenerateAndNegateStringCombinationFilter(new StringFilter((lhs, rhs) => lhs.ToLowerInvariant().EndsWith(rhs.ToLowerInvariant()))));
 
         #endregion String:Case-Insensitive
@@ -122,13 +122,13 @@ namespace tools_dotnet.PropertyProcessor
 
         private IFilter[] _filters { get; }
 
-        private FilterOperator(int id, string @operator, params IFilter[] filters) : base(id)
+        private FilterOperatorEnum(int id, string @operator, params IFilter[] filters) : base(id)
         {
             @Operator = @operator;
             _filters = filters;
         }
 
-        private FilterOperator(int id, string @operator, IFilter[] filterArray, params IFilter[] filters) : base(id)
+        private FilterOperatorEnum(int id, string @operator, IFilter[] filterArray, params IFilter[] filters) : base(id)
         {
             @Operator = @operator;
             _filters = filterArray.Concat(filters).ToArray();
