@@ -14,7 +14,7 @@ namespace tools_dotnet.Tests.PropertyProcessor
             string v2 = "def";
 
             //Act
-            var foundFilter = FilterOperator.Equal.GetFilter<string, string>();
+            var foundFilter = FilterOperatorEnum.Equal.GetFilter<string, string>();
 
             //Assert
             Assert.That(foundFilter, Is.Not.Null);
@@ -32,13 +32,13 @@ namespace tools_dotnet.Tests.PropertyProcessor
             //Act
 
             //Assert
-            Assert.That(FilterOperator.Apply("_=", v1 as ICollection<string>, new string[] { "ab" } as ICollection<string>), Is.Not.Null);
-            Assert.That(FilterOperator.Apply("_=", v1 as ICollection<string>, new string[] { "ab" } as ICollection<string>), Is.True);
-            Assert.That(FilterOperator.Apply("!_=", v1 as ICollection<string>, new string[] { "ab" } as ICollection<string>), Is.False);
+            Assert.That(FilterOperatorEnum.Apply("_=", v1 as ICollection<string>, new string[] { "ab" } as ICollection<string>), Is.Not.Null);
+            Assert.That(FilterOperatorEnum.Apply("_=", v1 as ICollection<string>, new string[] { "ab" } as ICollection<string>), Is.True);
+            Assert.That(FilterOperatorEnum.Apply("!_=", v1 as ICollection<string>, new string[] { "ab" } as ICollection<string>), Is.False);
 
-            Assert.That(FilterOperator.Apply("!_=", v1 as ICollection<string>, new string[] { "rr" } as ICollection<string>), Is.Not.Null);
-            Assert.That(FilterOperator.Apply("!_=", v1 as ICollection<string>, new string[] { "rr" } as ICollection<string>), Is.True);
-            Assert.That(FilterOperator.Apply("_=", v1 as ICollection<string>, new string[] { "rr" } as ICollection<string>), Is.False);
+            Assert.That(FilterOperatorEnum.Apply("!_=", v1 as ICollection<string>, new string[] { "rr" } as ICollection<string>), Is.Not.Null);
+            Assert.That(FilterOperatorEnum.Apply("!_=", v1 as ICollection<string>, new string[] { "rr" } as ICollection<string>), Is.True);
+            Assert.That(FilterOperatorEnum.Apply("_=", v1 as ICollection<string>, new string[] { "rr" } as ICollection<string>), Is.False);
         }
     }
 }
