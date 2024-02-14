@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using tools_dotnet.PropertyProcessor;
 
-namespace tools_dotnet.Tests.PropertyProcessor
+namespace tools_dotnet.Tests.PropertyProcessorTests
 {
     [TestFixture]
     public class FilterOperatorTests
