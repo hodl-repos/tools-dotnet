@@ -14,6 +14,6 @@ jobs:
     - name: Pack
       run: dotnet pack --configuration Release /p:Version=${VERSION} --output .
     - name: Push
-      run: dotnet nuget push tools-dotnet.${VERSION}.nupkg --api-key ${NUGET_SECRET}
+      run: dotnet nuget push tools-dotnet.${VERSION}.nupkg -s https://api.nuget.org/v3/index.json --api-key ${NUGET_SECRET}
       env:
         NUGET_SECRET: ${{ secrets.NUGET_SECRET }}
