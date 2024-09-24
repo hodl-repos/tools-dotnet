@@ -1,41 +1,45 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using trace.api.Exceptions;
-using trace.api.Dao.Context;
-using trace.api.Dao.Entities.Base;
 using Sieve.Services;
 using System.Linq.Expressions;
-using trace.api.Paging;
-using trace.api.Sieve.Filters.Interfaces;
-using trace.api.Util;
-using trace.api.Util.Keys;
+using tools_dotnet.Dao.KeyWrapper;
+using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using tools_dotnet.Utility;
+using tools_dotnet.Paging;
+using tools_dotnet.Dao.Entity;
+using tools_dotnet.Exceptions;
+using System.Linq;
 
-namespace trace.api.Dao.Repos.Crud.Impl
+namespace tools_dotnet.Dao.Crud.Impl
 {
     public abstract class BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper> : ICrudRepoWithKeyWrapper<TEntity, TKeyWrapper>
         where TEntity : class
         where TKeyWrapper : class, IKeyWrapper<TEntity>
     {
-        protected readonly PostgresDbContext _dbContext;
+        protected readonly DbContext _dbContext;
         protected readonly ISieveProcessor _sieveProcessor;
         protected readonly IMapper _mapper;
 
-        protected BaseCrudRepoWithKeyWrapper(PostgresDbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
+        protected BaseCrudRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _sieveProcessor = sieveProcessor ?? throw new ArgumentNullException(nameof(sieveProcessor));
         }
 
-        public virtual async Task<TEntity> AddAsync(TEntity item)
+        public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TEntity item)
         {
             try
             {
                 await _dbContext.AddAsync(item);
                 await _dbContext.SaveChangesAsync();
 
-                return item;
+                keyWrapper.UpdateKeyWrapperByEntity(keyWrapper, item);
+
+                return keyWrapper;
             }
             catch (DbUpdateException ex)
             {
@@ -61,7 +65,9 @@ namespace trace.api.Dao.Repos.Crud.Impl
 
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters)
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>()).Where(filters).ToListAsync();
+            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filters)
+                .ToListAsync();
         }
 
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve)
@@ -73,7 +79,9 @@ namespace trace.api.Dao.Repos.Crud.Impl
 
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).Where(filter).AsNoTracking();
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filter)
+                .AsNoTracking();
 
             return await query.SortFilterAndPageAsync(apiSieve, _sieveProcessor);
         }

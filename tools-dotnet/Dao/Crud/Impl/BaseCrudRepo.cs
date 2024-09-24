@@ -1,40 +1,42 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using trace.api.Exceptions;
-using trace.api.Paging;
-using trace.api.Sieve.Filters.Interfaces;
-using trace.api.Util;
-using trace.api.Dao.Context;
-using trace.api.Dao.Entities.Base;
 using Sieve.Services;
 using System.Linq.Expressions;
+using tools_dotnet.Dao.Entity;
+using System;
+using System.Threading.Tasks;
+using tools_dotnet.Exceptions;
+using System.Collections.Generic;
+using tools_dotnet.Paging;
+using tools_dotnet.Utility;
+using System.Linq;
 
-namespace trace.api.Dao.Repos.Crud.Impl
+namespace tools_dotnet.Dao.Crud.Impl
 {
     public abstract class BaseCrudRepo<TEntity, TIdType> : ICrudRepo<TEntity, TIdType>
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
     {
-        protected readonly PostgresDbContext _dbContext;
+        protected readonly DbContext _dbContext;
         protected readonly ISieveProcessor _sieveProcessor;
         protected readonly IMapper _mapper;
 
-        protected BaseCrudRepo(PostgresDbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
+        protected BaseCrudRepo(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _sieveProcessor = sieveProcessor ?? throw new ArgumentNullException(nameof(sieveProcessor));
         }
 
-        public virtual async Task<TEntity> AddAsync(TEntity item)
+        public virtual async Task<TIdType> AddAsync(TEntity item)
         {
             try
             {
                 await _dbContext.AddAsync(item);
                 await _dbContext.SaveChangesAsync();
 
-                return item;
+                return item.Id;
             }
             catch (DbUpdateException ex)
             {

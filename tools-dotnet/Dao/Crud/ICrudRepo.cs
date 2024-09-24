@@ -1,5 +1,7 @@
-﻿using trace.api.Dao.Entities.Base;
-using trace.api.Dao.Repos.Paging;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using tools_dotnet.Dao.Entity;
+using tools_dotnet.Dao.Paging;
 
 namespace tools_dotnet.Dao.Crud
 {
@@ -7,7 +9,7 @@ namespace tools_dotnet.Dao.Crud
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
     {
-        Task<TEntity> AddAsync(TEntity item);
+        Task<TIdType> AddAsync(TEntity item);
 
         Task<IEnumerable<TEntity>> GetAllAsync();
 

@@ -2,18 +2,19 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using trace.api.Dto.Base;
-using trace.api.Exceptions;
-using trace.api.Paging;
-using trace.api.Sieve.Filters.Interfaces;
-using trace.api.Util;
-using trace.api.Dao.Context;
-using trace.api.Dao.Entities.Base;
 using Sieve.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
-using trace.api.Util.Keys;
+using System.Threading.Tasks;
+using tools_dotnet.Dao.Entity;
+using tools_dotnet.Dao.KeyWrapper;
+using tools_dotnet.Exceptions;
+using tools_dotnet.Paging;
+using tools_dotnet.Utility;
 
-namespace trace.api.Dao.Repos.Crud.Impl
+namespace tools_dotnet.Dao.Crud.Impl
 {
     public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto> :
         BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
@@ -23,32 +24,33 @@ namespace trace.api.Dao.Repos.Crud.Impl
         where TDto : class
         where TInputDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(PostgresDbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
+        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
             : base(dbContext, mapper, sieveProcessor)
         {
         }
 
-        protected abstract TKeyWrapper GetKeyWrapper(TEntity entity);
-
-        public virtual async Task<TDto> AddAsync(TInputDto item)
+        public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item)
         {
             var entity = _mapper.Map<TEntity>(item);
 
-            entity = await AddAsync(entity);
-
-            return await GetByIdDtoAsync(GetKeyWrapper(entity));
+            return await AddAsync(keyWrapper, entity);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync()
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider).ToListAsync();
+            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>()).Where(filter).AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider).ToListAsync();
+            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filter)
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve)
@@ -60,15 +62,20 @@ namespace trace.api.Dao.Repos.Crud.Impl
 
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).Where(filter).AsNoTracking();
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filter)
+                .AsNoTracking();
 
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
         }
 
         public virtual async Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper)
         {
-            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false).AsNoTracking().Where(keyWrapper.GetKeyFilter())
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider).SingleOrDefaultAsync();
+            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
+                .AsNoTracking()
+                .Where(keyWrapper.GetKeyFilter())
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .SingleOrDefaultAsync();
 
             if (dto == null)
             {
@@ -112,7 +119,7 @@ namespace trace.api.Dao.Repos.Crud.Impl
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(PostgresDbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
+        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
         {
         }
     }

@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace tools_dotnet.KeyWrapper
+namespace tools_dotnet.Dao.KeyWrapper
 {
-    public interface IKeyWrapper<TEntity, TIdType> : IKeyWrapper<TEntity>
-    {
-        TIdType[] GetKey();
-    }
-
     public interface IKeyWrapper<TEntity>
     {
-        int KeyCount { get; }
-
         string[] GetKeyAsString();
+
+        /// <summary>
+        /// updates the keywrapper by only entity-id's, but not parent-id's as navigation-properties may not be loaded
+        /// </summary>
+        void UpdateKeyWrapperByEntity(IKeyWrapper<TEntity> keyWrapper, TEntity entity);
 
         Expression<Func<TEntity, bool>> GetKeyFilter();
 

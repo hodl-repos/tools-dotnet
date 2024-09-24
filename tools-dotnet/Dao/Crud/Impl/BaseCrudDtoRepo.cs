@@ -2,17 +2,19 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using trace.api.Dto.Base;
-using trace.api.Exceptions;
-using trace.api.Paging;
-using trace.api.Sieve.Filters.Interfaces;
-using trace.api.Util;
-using trace.api.Dao.Context;
-using trace.api.Dao.Entities.Base;
 using Sieve.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
+using tools_dotnet.Dao.Entity;
+using tools_dotnet.Dto;
+using tools_dotnet.Exceptions;
+using tools_dotnet.Paging;
+using tools_dotnet.Utility;
 
-namespace trace.api.Dao.Repos.Crud.Impl
+namespace tools_dotnet.Dao.Crud.Impl
 {
     public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto, TInputDto> :
         BaseCrudRepo<TEntity, TIdType>,
@@ -22,24 +24,24 @@ namespace trace.api.Dao.Repos.Crud.Impl
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
-        protected BaseCrudDtoRepo(PostgresDbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
+        protected BaseCrudDtoRepo(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
             : base(dbContext, mapper, sieveProcessor)
         {
         }
 
-        public virtual async Task<TDto> AddAsync(TInputDto item)
+        public virtual async Task<TIdType> AddAsync(TInputDto item)
         {
             var entity = _mapper.Map<TEntity>(item);
 
-            entity = await AddAsync(entity);
-
-            return await GetByIdDtoAsync(entity.Id);
+            return await AddAsync(entity);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync()
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider).ToListAsync();
+            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
@@ -59,15 +61,20 @@ namespace trace.api.Dao.Repos.Crud.Impl
 
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking().Where(filter);
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+                .AsNoTracking()
+                .Where(filter);
 
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
         }
 
         public virtual async Task<TDto> GetByIdDtoAsync(TIdType id)
         {
-            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false).AsNoTracking().Where(e => e.Id.Equals(id))
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider).SingleOrDefaultAsync();
+            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
+                .AsNoTracking()
+                .Where(e => e.Id.Equals(id))
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .SingleOrDefaultAsync();
 
             if (dto == null)
             {
@@ -110,7 +117,7 @@ namespace trace.api.Dao.Repos.Crud.Impl
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
     {
-        protected BaseCrudDtoRepo(PostgresDbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
+        protected BaseCrudDtoRepo(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
         {
         }
     }

@@ -1,8 +1,10 @@
-﻿using trace.api.Dto.Base;
-using trace.api.Dao.Entities.Base;
-using trace.api.Dao.Repos.Paging;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
-using trace.api.Util.Keys;
+using System.Threading.Tasks;
+using tools_dotnet.Dao.Entity;
+using tools_dotnet.Dao.KeyWrapper;
+using tools_dotnet.Dao.Paging;
 
 namespace tools_dotnet.Dao.Crud
 {
@@ -14,7 +16,7 @@ namespace tools_dotnet.Dao.Crud
         where TDto : class
         where TInputDto : class
     {
-        Task<TDto> AddAsync(TInputDto item);
+        Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item);
 
         Task<IEnumerable<TDto>> GetAllDtoAsync();
 

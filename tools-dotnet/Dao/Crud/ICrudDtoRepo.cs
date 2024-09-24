@@ -1,7 +1,10 @@
-﻿using trace.api.Dto.Base;
-using trace.api.Dao.Entities.Base;
-using trace.api.Dao.Repos.Paging;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
+using tools_dotnet.Dao.Paging;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using tools_dotnet.Dao.Entity;
+using System;
+using tools_dotnet.Dto;
 
 namespace tools_dotnet.Dao.Crud
 {
@@ -13,7 +16,7 @@ namespace tools_dotnet.Dao.Crud
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
-        Task<TDto> AddAsync(TInputDto item);
+        Task<TIdType> AddAsync(TInputDto item);
 
         Task<IEnumerable<TDto>> GetAllDtoAsync();
 
