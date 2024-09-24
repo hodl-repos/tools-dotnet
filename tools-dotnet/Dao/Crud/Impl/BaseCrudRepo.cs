@@ -60,6 +60,13 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await SetupQueryModifications(_dbContext.Set<TEntity>()).ToListAsync();
         }
 
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters)
+        {
+            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filters)
+                .ToListAsync();
+        }
+
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve)
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
