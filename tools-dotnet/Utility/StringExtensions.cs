@@ -14,11 +14,17 @@ namespace tools_dotnet.Utility
             return startUnderscores + Regex.Replace(input, @"([a-z0-9])([A-Z])", "$1" + replaceChar + "$2").ToLower();
         }
 
+        /// <summary>
+        /// uses string.Join but first string.IsNullOrEmpty to remove all useless string
+        /// </summary>
         public static string StringJoinWhereNotEmpty(string splitter, params string?[] strings)
         {
             return string.Join(splitter, strings.Where(value => !string.IsNullOrEmpty(value?.Trim())).DefaultIfEmpty(string.Empty));
         }
 
+        /// <summary>
+        /// uses string.IsNullOrEmpty to remove all empty string
+        /// </summary>
         public static string[] ArrayRemoveEmptyParts(this string[] strings)
         {
             return strings.Where(e => !string.IsNullOrEmpty(e.Trim())).ToArray();

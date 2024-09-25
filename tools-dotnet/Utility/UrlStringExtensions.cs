@@ -1,15 +1,12 @@
-﻿using System;
-using System.Linq;
-using System.Net.Mail;
-using System.Text.RegularExpressions;
+﻿using System.Linq;
 
 namespace tools_dotnet.Utility
 {
     public static class UrlStringExtensions
     {
-        public static string[] TrimEmptyUrlParts(this string[] strings)
+        public static string[] TrimEmptyUrlParts(this string[] urlParts)
         {
-            return strings.Where(e => !string.IsNullOrEmpty(e.Trim().Trim('/'))).ToArray();
+            return urlParts.Where(e => !string.IsNullOrEmpty(e.Trim().Trim('/'))).ToArray();
         }
     }
 }

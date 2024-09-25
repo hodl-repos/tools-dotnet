@@ -48,8 +48,10 @@ namespace tools_dotnet.Dao.Crud.Impl
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>());
 
-            return await query.Where(filter)
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider).ToListAsync();
+            return await query
+                .Where(filter)
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve)
@@ -74,7 +76,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .AsNoTracking()
                 .Where(e => e.Id.Equals(id))
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .SingleOrDefaultAsync();
+                .FirstOrDefaultAsync();
 
             if (dto == null)
             {

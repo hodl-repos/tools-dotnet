@@ -75,7 +75,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .AsNoTracking()
                 .Where(keyWrapper.GetKeyFilter())
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .SingleOrDefaultAsync();
+                .FirstOrDefaultAsync();
 
             if (dto == null)
             {
