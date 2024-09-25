@@ -10,7 +10,7 @@ namespace tools_dotnet.Dao.KeyWrapper
         /// <summary>
         /// updates the keywrapper by only entity-id's, but not parent-id's as navigation-properties may not be loaded
         /// </summary>
-        void UpdateKeyWrapperByEntity(IKeyWrapper<TEntity> keyWrapper, TEntity entity);
+        void UpdateKeyWrapperByEntity(TEntity entity);
 
         Expression<Func<TEntity, bool>> GetKeyFilter();
 

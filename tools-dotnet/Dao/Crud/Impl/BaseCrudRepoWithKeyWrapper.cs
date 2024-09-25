@@ -37,7 +37,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 await _dbContext.AddAsync(item);
                 await _dbContext.SaveChangesAsync();
 
-                keyWrapper.UpdateKeyWrapperByEntity(keyWrapper, item);
+                keyWrapper.UpdateKeyWrapperByEntity(item);
 
                 return keyWrapper;
             }
