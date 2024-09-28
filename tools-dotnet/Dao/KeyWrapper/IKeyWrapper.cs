@@ -8,6 +8,11 @@ namespace tools_dotnet.Dao.KeyWrapper
         string[] GetKeyAsString();
 
         /// <summary>
+        /// updates the entity in case of missing properties from dto-mapping (eg. CompanyId in DTO may not be needed there, but is in entity)
+        /// </summary>
+        void UpdateEntityWithContainingResource(TEntity entity);
+
+        /// <summary>
         /// updates the keywrapper by only entity-id's, but not parent-id's as navigation-properties may not be loaded
         /// </summary>
         void UpdateKeyWrapperByEntity(TEntity entity);

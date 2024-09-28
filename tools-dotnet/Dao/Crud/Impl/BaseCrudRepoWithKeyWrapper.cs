@@ -34,6 +34,8 @@ namespace tools_dotnet.Dao.Crud.Impl
         {
             try
             {
+                keyWrapper.UpdateEntityWithContainingResource(item);
+
                 await _dbContext.AddAsync(item);
                 await _dbContext.SaveChangesAsync();
 
@@ -96,6 +98,8 @@ namespace tools_dotnet.Dao.Crud.Impl
             var dbEntity = await GetByIdInternalAsync(keyWrapper);
 
             _mapper.Map(item, dbEntity);
+
+            keyWrapper.UpdateEntityWithContainingResource(dbEntity);
 
             try
             {
