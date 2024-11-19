@@ -35,5 +35,17 @@ namespace tools_dotnet.Utility
 
             return collection.Select(e => e.Address).ToArray();
         }
+
+        public static string? TryExtractEmail(this string input)
+        {
+            var canParseEmail = MailAddress.TryCreate(input, out var result);
+
+            if (canParseEmail)
+            {
+                return result!.Address;
+            }
+
+            return null;
+        }
     }
 }
