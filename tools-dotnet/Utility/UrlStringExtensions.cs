@@ -31,5 +31,43 @@ namespace tools_dotnet.Utility
         {
             return urlList.Select(ExtractDomain).Where(e => !string.IsNullOrEmpty(e)).Select(e => e!).ToArray();
         }
+
+        public static string SanitizeWebUrl(this string url)
+        {
+            if (string.IsNullOrEmpty(url))
+                return url;
+
+            if (url.StartsWith("//"))
+            {
+                // If URL starts with "//", replace with "http://"
+                return "https:" + url;
+            }
+            else if (!url.StartsWith("http://") && !url.StartsWith("https://"))
+            {
+                // If URL doesn't have a protocol, prepend "http://"
+                return "https://" + url;
+            }
+
+            return url;
+        }
+
+        public static string RemoveQueryParams(this string url)
+        {
+            if (string.IsNullOrEmpty(url))
+                return url;
+
+            try
+            {
+                Uri uri = new Uri(url);
+                // Reconstruct the URL without the query
+                return uri.GetLeftPart(UriPartial.Path);
+            }
+            catch (UriFormatException)
+
+            {
+                // If the input is not a valid URI, return it unchanged
+                return url;
+            }
+        }
     }
 }
