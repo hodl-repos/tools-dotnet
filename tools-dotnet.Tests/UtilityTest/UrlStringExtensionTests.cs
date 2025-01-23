@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Shouldly;
 using tools_dotnet.Utility;
 
 namespace tools_dotnet.Tests.UtilityTest
@@ -13,7 +13,7 @@ namespace tools_dotnet.Tests.UtilityTest
         {
             var result = UrlStringExtensions.ExtractDomain(input);
 
-            result.Should().Be(expectedDomain);
+            result.ShouldBe(expectedDomain);
         }
 
         [TestCase("mauracher.cc((fj")]
@@ -21,7 +21,7 @@ namespace tools_dotnet.Tests.UtilityTest
         {
             var result = UrlStringExtensions.ExtractDomain(input);
 
-            result.Should().BeNull();
+            result.ShouldBeNull();
         }
 
         [TestCase("//shopify.com/cdn/shop/files/sterling-silber.jpg?v=1729878050&amp;width=1440", "https://shopify.com/cdn/shop/files/sterling-silber.jpg")]
@@ -31,7 +31,7 @@ namespace tools_dotnet.Tests.UtilityTest
 
             var result = UrlStringExtensions.RemoveQueryParams(fixedUrl);
 
-            result.Should().Be(output);
+            result.ShouldBe(output);
         }
     }
 }
