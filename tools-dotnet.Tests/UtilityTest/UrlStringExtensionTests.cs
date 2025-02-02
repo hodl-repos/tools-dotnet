@@ -33,5 +33,14 @@ namespace tools_dotnet.Tests.UtilityTest
 
             result.ShouldBe(output);
         }
+
+        [TestCase("https://www.large-shop.com", "//shopify.com/cdn/shop/files/sterling-silber.jpg", "https://shopify.com/cdn/shop/files/sterling-silber.jpg")]
+        [TestCase("https://www.large-shop.com/cdn", "/shop/files/sterling-silber.jpg", "https://www.large-shop.com/shop/files/sterling-silber.jpg")]
+        public void TestResolveAndSanitize(string baseUrl, string input, string output)
+        {
+            var fixedUrl = UrlStringExtensions.ResolveAndSanitizeWebUrl(baseUrl, input);
+
+            fixedUrl.ShouldBe(output);
+        }
     }
 }

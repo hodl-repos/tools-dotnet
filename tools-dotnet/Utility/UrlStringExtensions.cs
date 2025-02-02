@@ -5,6 +5,14 @@ namespace tools_dotnet.Utility
 {
     public static class UrlStringExtensions
     {
+        public static string ResolveAndSanitizeWebUrl(string baseUrl, string path)
+        {
+            Uri baseUri = new Uri(baseUrl);
+            Uri fullUri = new Uri(baseUri, path);
+
+            return fullUri.ToString();
+        }
+
         public static string[] TrimEmptyUrlParts(this string[] urlParts)
         {
             return urlParts.Where(e => !string.IsNullOrEmpty(e.Trim().Trim('/'))).ToArray();
