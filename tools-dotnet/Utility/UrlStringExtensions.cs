@@ -10,7 +10,7 @@ namespace tools_dotnet.Utility
             Uri baseUri = new Uri(baseUrl);
             Uri fullUri = new Uri(baseUri, path);
 
-            return fullUri.ToString();
+            return SanitizeWebUrl(fullUri.ToString());
         }
 
         public static string[] TrimEmptyUrlParts(this string[] urlParts)
