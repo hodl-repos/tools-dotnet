@@ -3,8 +3,16 @@ using System.Linq.Expressions;
 
 namespace tools_dotnet.Dao.KeyWrapper
 {
+    /// <summary>
+    /// Allows repos and services to identify entites that are located inside of other entites, eg. customer, which has a company-id it references
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
     public interface IKeyWrapper<TEntity>
     {
+        /// <summary>
+        /// is used in Exceptions; return string[] of keys, starting by the top-most key going in to the entity id at last
+        /// </summary>
+        /// <returns></returns>
         string[] GetKeyAsString();
 
         /// <summary>
@@ -17,6 +25,9 @@ namespace tools_dotnet.Dao.KeyWrapper
         /// </summary>
         void UpdateKeyWrapperByEntity(TEntity entity);
 
+        /// <summary>
+        /// used to find a entity with the key
+        /// </summary>
         Expression<Func<TEntity, bool>> GetKeyFilter();
 
         /// <summary>

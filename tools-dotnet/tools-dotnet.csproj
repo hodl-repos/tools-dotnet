@@ -8,6 +8,7 @@
     <RepositoryType>git</RepositoryType>
     <Title>hodl-software.tools-dotnet</Title>
     <Company>hodl-software</Company>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" />
