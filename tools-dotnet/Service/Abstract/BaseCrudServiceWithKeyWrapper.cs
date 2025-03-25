@@ -33,6 +33,10 @@ namespace tools_dotnet.Service.Abstract
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         }
 
+        /// <summary>
+        /// must check if the parent-ressources are correctly set or set them
+        /// eg.: customer.company_id get set here, but not the primary ID
+        /// </summary>
         protected abstract Task SetAndValidateKeyAsync(TDto item, TKeyWrapper keyWrapper);
 
         public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TDto item)
