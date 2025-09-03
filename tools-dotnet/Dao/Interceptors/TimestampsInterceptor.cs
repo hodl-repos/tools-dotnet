@@ -34,17 +34,17 @@ namespace tools_dotnet.Dao.Interceptors
 
             var entries = changeTracker
                 .Entries()
-                .Where(e => e.Entity is IAuditableEntity && (
+                .Where(e => e.Entity is IChangeTrackingEntity && (
                         e.State == EntityState.Added
                         || e.State == EntityState.Modified));
 
             foreach (var entityEntry in entries)
             {
-                ((IAuditableEntity)entityEntry.Entity).UpdatedTimestamp = DateTimeOffset.UtcNow;
+                ((IChangeTrackingEntity)entityEntry.Entity).UpdatedTimestamp = DateTimeOffset.UtcNow;
 
                 if (entityEntry.State == EntityState.Added)
                 {
-                    ((IAuditableEntity)entityEntry.Entity).CreatedTimestamp = DateTimeOffset.UtcNow;
+                    ((IChangeTrackingEntity)entityEntry.Entity).CreatedTimestamp = DateTimeOffset.UtcNow;
                 }
             }
         }
