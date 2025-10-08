@@ -6,6 +6,9 @@ namespace tools_dotnet.Utility
 {
     public static class StringExtensions
     {
+        /// <summary>
+        /// Converts the given string to snake_case format
+        /// </summary>
         public static string? ToSnakeCase(this string? input, char replaceChar = '_')
         {
             if (string.IsNullOrEmpty(input)) { return input; }
