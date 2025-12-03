@@ -5,24 +5,24 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AutoMapper" Version="15.0.1" />
+    <PackageVersion Include="AutoMapper" Version="15.1.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Enum.Ext" Version="1.0.9" />
     <PackageVersion Include="FluentAssertions" Version="8.0.1" />
-    <PackageVersion Include="FluentValidation" Version="12.0.0" />
+    <PackageVersion Include="FluentValidation" Version="12.1.0" />
     <PackageVersion Include="JunitXml.TestLogger" Version="7.0.2" />
-    <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-    <PackageVersion Include="Npgsql" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="Npgsql" Version="10.0.0" />
     <PackageVersion Include="NUnit" Version="4.4.0" />
-    <PackageVersion Include="NUnit.Analyzers" Version="4.10.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.11.2" />
     <PackageVersion Include="NUnit3TestAdapter" Version="5.2.0" />
     <PackageVersion Include="rt.Sieve.Npgsql" Version="1.0.0" />
     <PackageVersion Include="Serilog" Version="4.3.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="Sieve" Version="2.5.5" />
-    <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.9" />
-    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="9.0.9" />
+    <PackageVersion Include="System.Text.Encodings.Web" Version="10.0.0" />
+    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="10.0.0" />
   </ItemGroup>
 </Project>
