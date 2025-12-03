@@ -1,16 +1,18 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Sieve.Services;
-using System.Linq.Expressions;
-using tools_dotnet.Dao.Entity;
 using System;
-using System.Threading.Tasks;
-using tools_dotnet.Exceptions;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using tools_dotnet.Dao.Entity;
+using tools_dotnet.Dto;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Paging;
 using tools_dotnet.Utility;
-using System.Linq;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
@@ -79,6 +81,21 @@ namespace tools_dotnet.Dao.Crud.Impl
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).Where(filter).AsNoTracking();
 
             return await query.SortFilterAndPageAsync(apiSieve, _sieveProcessor);
+        }
+
+        public virtual async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true)
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), ignoreDeletedWithAuditable)
+                .Where(filter);
+
+            if (throwOnMultipleFound)
+            {
+                return await query.SingleOrDefaultAsync();
+            }
+            else
+            {
+                return await query.FirstOrDefaultAsync();
+            }
         }
 
         public virtual async Task<TEntity> GetByIdAsync(TIdType id)

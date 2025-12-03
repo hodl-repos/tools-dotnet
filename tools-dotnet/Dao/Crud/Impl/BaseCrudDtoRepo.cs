@@ -46,7 +46,7 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>());
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
             return await query
                 .Where(filter)
@@ -68,6 +68,23 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .Where(filter);
 
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+        }
+
+        public virtual async Task<TDto?> FindDtoAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true)
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), ignoreDeletedWithAuditable)
+                .AsNoTracking()
+                .Where(filter)
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider);
+
+            if (throwOnMultipleFound)
+            {
+                return await query.SingleOrDefaultAsync();
+            }
+            else
+            {
+                return await query.FirstOrDefaultAsync();
+            }
         }
 
         public virtual async Task<TDto> GetByIdDtoAsync(TIdType id)

@@ -22,6 +22,8 @@ namespace tools_dotnet.Dao.Crud
 
         Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter);
 
+        Task<TDto?> FindDtoAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true);
+
         Task UpdateAsync(TInputDto item);
 
         Task<TDto> GetByIdDtoAsync(TIdType id);
