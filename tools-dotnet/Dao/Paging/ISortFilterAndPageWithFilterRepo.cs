@@ -7,6 +7,6 @@ namespace tools_dotnet.Dao.Paging
 {
     public interface ISortFilterAndPageWithFilterRepo<TEntity> where TEntity : class
     {
-        Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> additionalFilter);
+        Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> additionalFilter);
     }
 }

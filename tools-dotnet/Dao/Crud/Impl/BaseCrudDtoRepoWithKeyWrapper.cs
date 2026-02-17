@@ -2,7 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Sieve.Services;
+using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,8 +24,8 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TDto : class
         where TInputDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
-            : base(dbContext, mapper, sieveProcessor)
+        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
+            : base(dbContext, mapper, paginationProcessor)
         {
         }
 
@@ -53,20 +53,20 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync();
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination)
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filter)
                 .AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
         }
 
         public virtual async Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper)
@@ -119,7 +119,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
+        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor) : base(dbContext, mapper, paginationProcessor)
         {
         }
     }

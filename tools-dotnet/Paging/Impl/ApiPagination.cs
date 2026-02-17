@@ -2,7 +2,7 @@
 
 namespace tools_dotnet.Paging.Impl
 {
-    public class ApiSieve : IApiSieve
+    public class ApiPagination : IApiPagination
     {
         public string? Filters { get; set; } = string.Empty;
 

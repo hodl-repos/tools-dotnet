@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Sieve.Services;
+using tools_dotnet.Pagination.Services;
 using System.Linq.Expressions;
 using tools_dotnet.Dao.KeyWrapper;
 using System;
@@ -20,14 +20,14 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TKeyWrapper : class, IKeyWrapper<TEntity>
     {
         protected readonly DbContext _dbContext;
-        protected readonly ISieveProcessor _sieveProcessor;
+        protected readonly IPaginationProcessor _paginationProcessor;
         protected readonly IMapper _mapper;
 
-        protected BaseCrudRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
+        protected BaseCrudRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _sieveProcessor = sieveProcessor ?? throw new ArgumentNullException(nameof(sieveProcessor));
+            _paginationProcessor = paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
         }
 
         public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TEntity item)
@@ -72,20 +72,20 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync();
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination)
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiSieve, _sieveProcessor);
+            return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filter)
                 .AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiSieve, _sieveProcessor);
+            return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
         }
 
         public virtual async Task<TEntity> GetByIdAsync(TKeyWrapper keyWrapper)

@@ -13,7 +13,7 @@ namespace tools_dotnet.Service
 
         Task<IEnumerable<TDto>> GetAllAsync();
 
-        Task<IPagedList<TDto>> GetAllAsync(IApiSieve apiSieve);
+        Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination);
 
         Task<TDto> GetByIdAsync(TIdType id);
 

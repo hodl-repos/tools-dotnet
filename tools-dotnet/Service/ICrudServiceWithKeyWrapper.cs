@@ -13,7 +13,7 @@ namespace tools_dotnet.Service
 
         Task<IEnumerable<TDto>> GetAllAsync(TKeyWrapper keyWrapper);
 
-        Task<IPagedList<TDto>> GetAllAsync(IApiSieve apiSieve, TKeyWrapper keyWrapper);
+        Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination, TKeyWrapper keyWrapper);
 
         Task<TDto> GetByIdAsync(TKeyWrapper keyWrapper);
 

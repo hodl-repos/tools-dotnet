@@ -44,9 +44,9 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetAllDtoAsync();
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination)
         {
-            return await _baseRepo.GetAllDtoAsync(apiSieve);
+            return await _baseRepo.GetAllDtoAsync(apiPagination);
         }
 
         public virtual async Task<TDto> GetByIdAsync(TIdType id)

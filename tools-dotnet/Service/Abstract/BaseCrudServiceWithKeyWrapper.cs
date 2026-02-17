@@ -53,9 +53,9 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetAllDtoAsync(keyWrapper.GetContainingResourceFilter());
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiSieve apiSieve, TKeyWrapper keyWrapper)
+        public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination, TKeyWrapper keyWrapper)
         {
-            return await _baseRepo.GetAllDtoAsync(apiSieve, keyWrapper.GetContainingResourceFilter());
+            return await _baseRepo.GetAllDtoAsync(apiPagination, keyWrapper.GetContainingResourceFilter());
         }
 
         public virtual async Task<TDto> GetByIdAsync(TKeyWrapper keyWrapper)

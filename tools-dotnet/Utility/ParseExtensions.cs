@@ -6,7 +6,7 @@ using System.Linq;
 namespace tools_dotnet.Utility
 {
     /// <summary>
-    /// Small helper functions to help convert strings to longs or UUIDs in Sieve customer methods
+    /// Small helper functions to help convert strings to longs or UUIDs in Pagination custom methods
     /// </summary>
     public static class ParseExtensions
     {
