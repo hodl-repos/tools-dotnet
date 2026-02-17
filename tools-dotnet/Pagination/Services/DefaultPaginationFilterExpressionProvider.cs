@@ -12,6 +12,14 @@ namespace tools_dotnet.Pagination.Services
         private static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(nameof(string.StartsWith), new[] { typeof(string) })!;
         private static readonly MethodInfo EndsWithMethod = typeof(string).GetMethod(nameof(string.EndsWith), new[] { typeof(string) })!;
         private static readonly MethodInfo ToUpperMethod = typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!;
+        private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
+        private readonly PaginationCaseInsensitiveNormalization _caseInsensitiveNormalization;
+
+        public DefaultPaginationFilterExpressionProvider(
+            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization = PaginationCaseInsensitiveNormalization.ToUpper)
+        {
+            _caseInsensitiveNormalization = caseInsensitiveNormalization;
+        }
 
         public bool TryBuildExpression(PaginationFilterExpressionContext context, out Expression? expression)
         {
@@ -31,7 +39,7 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var typedValue in context.TypedValues)
             {
-                var singleExpression = BuildSingleExpression(context.MemberExpression, context.FilterTerm.Operator, typedValue);
+                var singleExpression = BuildSingleExpression(context.MemberExpression, context.FilterTerm.Operator, typedValue, _caseInsensitiveNormalization);
 
                 if (singleExpression != null)
                 {
@@ -56,17 +64,25 @@ namespace tools_dotnet.Pagination.Services
             return true;
         }
 
-        private static Expression? BuildSingleExpression(Expression memberExpression, PaginationOperator @operator, object? typedValue)
+        private static Expression? BuildSingleExpression(
+            Expression memberExpression,
+            PaginationOperator @operator,
+            object? typedValue,
+            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization)
         {
             if (@operator.IsStringOperator)
             {
-                return BuildStringExpression(memberExpression, @operator, typedValue);
+                return BuildStringExpression(memberExpression, @operator, typedValue, caseInsensitiveNormalization);
             }
 
             return BuildComparableExpression(memberExpression, @operator, typedValue);
         }
 
-        private static Expression? BuildStringExpression(Expression memberExpression, PaginationOperator @operator, object? typedValue)
+        private static Expression? BuildStringExpression(
+            Expression memberExpression,
+            PaginationOperator @operator,
+            object? typedValue,
+            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization)
         {
             if (memberExpression.Type != typeof(string) || typedValue is not string stringValue)
             {
@@ -75,12 +91,29 @@ namespace tools_dotnet.Pagination.Services
 
             var nullExpression = Expression.Constant(null, typeof(string));
             var notNullExpression = Expression.NotEqual(memberExpression, nullExpression);
-            var valueExpression = Expression.Constant(
-                @operator.IsCaseInsensitive ? stringValue.ToUpperInvariant() : stringValue,
-                typeof(string));
-            var normalizedMemberExpression = @operator.IsCaseInsensitive
-                ? Expression.Call(memberExpression, ToUpperMethod)
-                : memberExpression;
+            var normalizedMemberExpression = memberExpression;
+            var normalizedValue = stringValue;
+
+            if (@operator.IsCaseInsensitive)
+            {
+                switch (caseInsensitiveNormalization)
+                {
+                    case PaginationCaseInsensitiveNormalization.ToUpper:
+                        normalizedMemberExpression = Expression.Call(memberExpression, ToUpperMethod);
+                        normalizedValue = stringValue.ToUpperInvariant();
+                        break;
+                    case PaginationCaseInsensitiveNormalization.ToLower:
+                        normalizedMemberExpression = Expression.Call(memberExpression, ToLowerMethod);
+                        normalizedValue = stringValue.ToLowerInvariant();
+                        break;
+                    case PaginationCaseInsensitiveNormalization.None:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(caseInsensitiveNormalization), caseInsensitiveNormalization, "Unknown case-insensitive normalization strategy.");
+                }
+            }
+
+            var valueExpression = Expression.Constant(normalizedValue, typeof(string));
 
             Expression positive;
 
