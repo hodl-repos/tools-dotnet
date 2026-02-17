@@ -10,6 +10,9 @@ using System.Reflection;
 
 namespace tools_dotnet.Pagination.Services
 {
+    /// <summary>
+    /// Applies filtering, sorting, and pagination to an <see cref="IQueryable{T}"/>.
+    /// </summary>
     public class PaginationProcessor : IPaginationProcessor
     {
         private static readonly MethodInfo OrderByMethod = GetOrderMethod(nameof(Queryable.OrderBy));
@@ -20,6 +23,11 @@ namespace tools_dotnet.Pagination.Services
         private readonly IPaginationModelDeserializer _deserializer;
         private readonly IReadOnlyList<IPaginationFilterExpressionProvider> _filterExpressionProviders;
 
+        /// <summary>
+        /// Creates a pagination processor.
+        /// </summary>
+        /// <param name="deserializer">Optional deserializer for incoming models.</param>
+        /// <param name="filterExpressionProviders">Optional filter providers. If not supplied, the default provider is used.</param>
         public PaginationProcessor(
             IPaginationModelDeserializer? deserializer = null,
             IEnumerable<IPaginationFilterExpressionProvider>? filterExpressionProviders = null)
@@ -36,6 +44,7 @@ namespace tools_dotnet.Pagination.Services
             _filterExpressionProviders = providers;
         }
 
+        /// <inheritdoc />
         public IQueryable<TEntity> Apply<TEntity>(
             PaginationModel model,
             IQueryable<TEntity> source,

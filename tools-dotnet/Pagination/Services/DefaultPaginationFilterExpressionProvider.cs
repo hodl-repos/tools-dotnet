@@ -6,6 +6,9 @@ using System.Reflection;
 
 namespace tools_dotnet.Pagination.Services
 {
+    /// <summary>
+    /// Default implementation that translates filter operators into expression trees.
+    /// </summary>
     public class DefaultPaginationFilterExpressionProvider : IPaginationFilterExpressionProvider
     {
         private static readonly MethodInfo ContainsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
@@ -15,12 +18,17 @@ namespace tools_dotnet.Pagination.Services
         private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
         private readonly PaginationCaseInsensitiveNormalization _caseInsensitiveNormalization;
 
+        /// <summary>
+        /// Creates the default filter expression provider.
+        /// </summary>
+        /// <param name="caseInsensitiveNormalization">Normalization strategy for case-insensitive operators.</param>
         public DefaultPaginationFilterExpressionProvider(
             PaginationCaseInsensitiveNormalization caseInsensitiveNormalization = PaginationCaseInsensitiveNormalization.ToUpper)
         {
             _caseInsensitiveNormalization = caseInsensitiveNormalization;
         }
 
+        /// <inheritdoc />
         public bool TryBuildExpression(PaginationFilterExpressionContext context, out Expression? expression)
         {
             if (context == null)

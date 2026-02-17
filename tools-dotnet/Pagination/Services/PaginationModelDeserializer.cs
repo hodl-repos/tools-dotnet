@@ -6,6 +6,9 @@ using System.Text;
 
 namespace tools_dotnet.Pagination.Services
 {
+    /// <summary>
+    /// Parses raw filter/sort text into strongly typed pagination terms.
+    /// </summary>
     public class PaginationModelDeserializer : IPaginationModelDeserializer
     {
         private const int DefaultPage = 1;
@@ -26,6 +29,7 @@ namespace tools_dotnet.Pagination.Services
             '*'
         };
 
+        /// <inheritdoc />
         public DeserializedPaginationModel Deserialize(PaginationModel model)
         {
             if (model == null)
