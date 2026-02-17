@@ -26,6 +26,9 @@
     <ProjectReference Include="..\tools-dotnet\tools-dotnet.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 </Project>
