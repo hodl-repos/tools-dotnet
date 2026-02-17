@@ -1,6 +1,7 @@
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,6 +10,8 @@ namespace tools_dotnet.Pagination.OpenApi
 {
     internal static class PaginationOpenApiMetadataProvider
     {
+        private const int MaxNestedDepth = 8;
+
         private static readonly IReadOnlyList<PaginationOperator> EqualityOperators =
             new[] { PaginationOperator.Equal, PaginationOperator.NotEquals };
 
@@ -73,43 +76,18 @@ namespace tools_dotnet.Pagination.OpenApi
             }
 
             var result = new List<PaginationOpenApiFieldDescriptor>();
-            var members = modelType
-                .GetMembers(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field);
+            var activePathTypes = new HashSet<Type>();
 
-            foreach (var member in members)
-            {
-                var attribute = member.GetCustomAttribute<PaginationAttribute>();
-
-                if (attribute == null)
-                {
-                    continue;
-                }
-
-                var memberType = member switch
-                {
-                    PropertyInfo propertyInfo => propertyInfo.PropertyType,
-                    FieldInfo fieldInfo => fieldInfo.FieldType,
-                    _ => null
-                };
-
-                if (memberType == null)
-                {
-                    continue;
-                }
-
-                var memberName = string.IsNullOrWhiteSpace(attribute.Name) ? member.Name : attribute.Name!;
-                var operators = attribute.CanFilter ? ResolveFilterOperators(memberType) : Array.Empty<PaginationOperator>();
-
-                result.Add(new PaginationOpenApiFieldDescriptor(
-                    memberName,
-                    memberType,
-                    attribute.CanFilter,
-                    attribute.CanSort,
-                    operators));
-            }
+            CollectDescriptors(
+                modelType,
+                prefix: null,
+                depth: 0,
+                result,
+                activePathTypes);
 
             return result
+                .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(x => x.First())
                 .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
@@ -177,6 +155,112 @@ namespace tools_dotnet.Pagination.OpenApi
             }
 
             return EqualityOperators;
+        }
+
+        private static void CollectDescriptors(
+            Type modelType,
+            string? prefix,
+            int depth,
+            ICollection<PaginationOpenApiFieldDescriptor> result,
+            ISet<Type> activePathTypes)
+        {
+            if (depth > MaxNestedDepth)
+            {
+                return;
+            }
+
+            if (!activePathTypes.Add(modelType))
+            {
+                return;
+            }
+
+            try
+            {
+                var members = modelType
+                    .GetMembers(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(x => x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field);
+
+                foreach (var member in members)
+                {
+                    var attribute = member.GetCustomAttribute<PaginationAttribute>();
+
+                    if (attribute == null)
+                    {
+                        continue;
+                    }
+
+                    var memberType = member switch
+                    {
+                        PropertyInfo propertyInfo => propertyInfo.PropertyType,
+                        FieldInfo fieldInfo => fieldInfo.FieldType,
+                        _ => null
+                    };
+
+                    if (memberType == null)
+                    {
+                        continue;
+                    }
+
+                    var memberName = string.IsNullOrWhiteSpace(attribute.Name) ? member.Name : attribute.Name!;
+                    var fieldPath = string.IsNullOrWhiteSpace(prefix) ? memberName : $"{prefix}.{memberName}";
+                    var operators = attribute.CanFilter ? ResolveFilterOperators(memberType) : Array.Empty<PaginationOperator>();
+
+                    result.Add(new PaginationOpenApiFieldDescriptor(
+                        fieldPath,
+                        memberType,
+                        attribute.CanFilter,
+                        attribute.CanSort,
+                        operators));
+
+                    if (!attribute.CanFilterSubProperties && !attribute.CanSortSubProperties)
+                    {
+                        continue;
+                    }
+
+                    if (!CanTraverseNestedMembers(memberType))
+                    {
+                        continue;
+                    }
+
+                    var nestedType = Nullable.GetUnderlyingType(memberType) ?? memberType;
+                    CollectDescriptors(
+                        nestedType,
+                        fieldPath,
+                        depth + 1,
+                        result,
+                        activePathTypes);
+                }
+            }
+            finally
+            {
+                activePathTypes.Remove(modelType);
+            }
+        }
+
+        private static bool CanTraverseNestedMembers(Type memberType)
+        {
+            var underlyingType = Nullable.GetUnderlyingType(memberType) ?? memberType;
+
+            if (underlyingType == typeof(string) ||
+                underlyingType == typeof(Guid) ||
+                underlyingType == typeof(decimal) ||
+                underlyingType == typeof(DateTime) ||
+                underlyingType == typeof(DateTimeOffset) ||
+                underlyingType == typeof(DateOnly) ||
+                underlyingType == typeof(TimeOnly) ||
+                underlyingType == typeof(TimeSpan) ||
+                underlyingType.IsEnum ||
+                underlyingType.IsPrimitive)
+            {
+                return false;
+            }
+
+            if (underlyingType != typeof(byte[]) && typeof(IEnumerable).IsAssignableFrom(underlyingType))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

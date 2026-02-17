@@ -31,6 +31,13 @@ namespace tools_dotnet.Tests.PaginationTest
         {
             throw new System.NotImplementedException();
         }
+
+        [HttpGet("nested")]
+        [PaginationOpenApiType(typeof(PaginationOpenApiNestedModel))]
+        public ActionResult<IReadOnlyList<PaginationOpenApiNestedModel>> GetNested([FromQuery] ApiPagination pagination)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 
     public enum PaginationOpenApiStatus
@@ -60,6 +67,24 @@ namespace tools_dotnet.Tests.PaginationTest
         public System.DateTimeOffset? CreatedAt { get; set; }
 
         public string NotDocumented { get; set; } = string.Empty;
+    }
+
+    public sealed class PaginationOpenApiNestedModel
+    {
+        [Pagination(Name = "owner", CanFilter = false, CanSort = false, CanFilterSubProperties = true, CanSortSubProperties = true)]
+        public PaginationOpenApiNestedOwner Owner { get; set; } = new();
+
+        [Pagination(Name = "blocked_owner", CanFilter = false, CanSort = false, CanFilterSubProperties = false, CanSortSubProperties = false)]
+        public PaginationOpenApiNestedOwner BlockedOwner { get; set; } = new();
+    }
+
+    public sealed class PaginationOpenApiNestedOwner
+    {
+        [Pagination(Name = "display_name", CanFilter = true, CanSort = true)]
+        public string DisplayName { get; set; } = string.Empty;
+
+        [Pagination(Name = "age", CanFilter = true, CanSort = false)]
+        public int Age { get; set; }
     }
 
     [TestFixture]
@@ -99,6 +124,22 @@ namespace tools_dotnet.Tests.PaginationTest
             filtersParameter.Description.ShouldContain("Allowed filter fields:");
             filtersParameter.Description.ShouldContain("`name` (string):");
             filtersParameter.Description.ShouldContain("`age` (number):");
+        }
+
+        [Test]
+        public void Swagger_ShouldDocumentNestedFields_WhenSubPropertiesAreEnabled()
+        {
+            var operation = GetOperation("/openapi-pagination-tests/nested");
+            var filtersParameter = GetQueryParameter(operation, "filters");
+            var sortsParameter = GetQueryParameter(operation, "sorts");
+
+            filtersParameter.Description.ShouldContain("`owner.display_name` (string):");
+            filtersParameter.Description.ShouldContain("`owner.age` (number):");
+            filtersParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
+
+            sortsParameter.Description.ShouldContain("`owner.display_name`");
+            sortsParameter.Description.ShouldNotContain("`owner.age`");
+            sortsParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
         }
 
         private static OpenApiOperation GetOperation(string path)

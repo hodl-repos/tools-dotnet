@@ -63,6 +63,32 @@ public sealed class UserEntity
 }
 ```
 
+Nested objects can be exposed explicitly:
+
+```csharp
+public sealed class UserEntity
+{
+    [Pagination(
+        Name = "profile",
+        CanFilter = false,
+        CanSort = false,
+        CanFilterSubProperties = true,
+        CanSortSubProperties = true)]
+    public UserProfile Profile { get; set; } = new();
+}
+
+public sealed class UserProfile
+{
+    [Pagination(Name = "display_name", CanFilter = true, CanSort = true)]
+    public string DisplayName { get; set; } = string.Empty;
+}
+```
+
+Example queries:
+
+- `filters=profile.display_name==alice`
+- `sorts=profile.display_name`
+
 Accept query parameters in your endpoint:
 
 ```csharp
@@ -150,6 +176,7 @@ var citextProcessor = new PaginationProcessor(
 ## OpenAPI support for filters and sorts
 
 Pagination OpenAPI support can enrich `filters` and `sorts` query parameter descriptions in `openapi.json` by reading `[Pagination]` attributes.
+Nested fields are included when parent members allow sub-properties (`CanFilterSubProperties` / `CanSortSubProperties`).
 
 ```csharp
 using Microsoft.OpenApi.Models;
@@ -263,3 +290,33 @@ public sealed class MyCustomProvider : IPaginationFilterExpressionProvider
 ```
 
 If you add custom providers and still want built-in behavior, include `DefaultPaginationFilterExpressionProvider` in your provider list.
+
+## Custom filter methods (Sieve-style)
+
+When a filter field does not map to an entity member, `PaginationProcessor` can call custom methods by name.
+
+Implement `IPaginationCustomFilterMethods` and register the implementation in the processor:
+
+```csharp
+using tools_dotnet.Pagination.Services;
+
+public sealed class UserCustomFilters : IPaginationCustomFilterMethods
+{
+    public IQueryable<UserEntity> is_adult(IQueryable<UserEntity> source, string op, string[] values)
+    {
+        if (op != "==" || values.Length == 0 || !int.TryParse(values[0], out var minAge))
+        {
+            return source;
+        }
+
+        return source.Where(x => x.Age >= minAge);
+    }
+}
+
+var processor = new PaginationProcessor(
+    customFilterMethods: new[] { new UserCustomFilters() });
+```
+
+Query example:
+
+- `filters=is_adult==21`

@@ -22,15 +22,18 @@ namespace tools_dotnet.Pagination.Services
 
         private readonly IPaginationModelDeserializer _deserializer;
         private readonly IReadOnlyList<IPaginationFilterExpressionProvider> _filterExpressionProviders;
+        private readonly IReadOnlyList<IPaginationCustomFilterMethods> _customFilterMethods;
 
         /// <summary>
         /// Creates a pagination processor.
         /// </summary>
         /// <param name="deserializer">Optional deserializer for incoming models.</param>
         /// <param name="filterExpressionProviders">Optional filter providers. If not supplied, the default provider is used.</param>
+        /// <param name="customFilterMethods">Optional custom filter method containers used when a field does not map to a member.</param>
         public PaginationProcessor(
             IPaginationModelDeserializer? deserializer = null,
-            IEnumerable<IPaginationFilterExpressionProvider>? filterExpressionProviders = null)
+            IEnumerable<IPaginationFilterExpressionProvider>? filterExpressionProviders = null,
+            IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null)
         {
             _deserializer = deserializer ?? new PaginationModelDeserializer();
 
@@ -42,6 +45,9 @@ namespace tools_dotnet.Pagination.Services
             }
 
             _filterExpressionProviders = providers;
+            _customFilterMethods = customFilterMethods == null
+                ? Array.Empty<IPaginationCustomFilterMethods>()
+                : customFilterMethods.ToList();
         }
 
         /// <inheritdoc />
@@ -103,6 +109,11 @@ namespace tools_dotnet.Pagination.Services
                 {
                     if (!TryBuildMemberExpression(parameterExpression, field, out var memberExpression) || memberExpression == null)
                     {
+                        if (TryApplyCustomFilterMethod(query, field, filter, dataForCustomMethods, out var customMethodQuery))
+                        {
+                            query = customMethodQuery;
+                        }
+
                         continue;
                     }
 
@@ -140,6 +151,160 @@ namespace tools_dotnet.Pagination.Services
             }
 
             return query;
+        }
+
+        private bool TryApplyCustomFilterMethod<TEntity>(
+            IQueryable<TEntity> query,
+            string field,
+            PaginationFilterTerm filterTerm,
+            object[]? dataForCustomMethods,
+            out IQueryable<TEntity> filteredQuery)
+        {
+            filteredQuery = query;
+
+            if (_customFilterMethods.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var customFilterMethods in _customFilterMethods)
+            {
+                if (TryInvokeCustomFilterMethod(query, customFilterMethods, field, filterTerm, dataForCustomMethods, out filteredQuery))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryInvokeCustomFilterMethod<TEntity>(
+            IQueryable<TEntity> query,
+            IPaginationCustomFilterMethods customFilterMethods,
+            string methodName,
+            PaginationFilterTerm filterTerm,
+            object[]? dataForCustomMethods,
+            out IQueryable<TEntity> filteredQuery)
+        {
+            filteredQuery = query;
+
+            var methods = customFilterMethods
+                .GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Where(x => string.Equals(x.Name, methodName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var method in methods)
+            {
+                if (!TryCloseCustomFilterMethod<TEntity>(method, out var closedMethod) || closedMethod == null)
+                {
+                    continue;
+                }
+
+                var parameters = closedMethod.GetParameters();
+
+                if (parameters.Length == 0 || parameters.Length > 4)
+                {
+                    continue;
+                }
+
+                if (!parameters[0].ParameterType.IsAssignableFrom(typeof(IQueryable<TEntity>)))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(string))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 3 && !IsSupportedValuesParameter(parameters[2].ParameterType))
+                {
+                    continue;
+                }
+
+                if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
+                {
+                    continue;
+                }
+
+                if (!typeof(IQueryable<TEntity>).IsAssignableFrom(closedMethod.ReturnType))
+                {
+                    continue;
+                }
+
+                var args = new object?[parameters.Length];
+                args[0] = query;
+
+                if (parameters.Length >= 2)
+                {
+                    args[1] = filterTerm.Operator.Id;
+                }
+
+                if (parameters.Length >= 3)
+                {
+                    args[2] = CreateValuesArgument(parameters[2].ParameterType, filterTerm.Values);
+                }
+
+                if (parameters.Length == 4)
+                {
+                    args[3] = dataForCustomMethods;
+                }
+
+                var result = closedMethod.Invoke(customFilterMethods, args);
+
+                if (result is IQueryable<TEntity> typedResult)
+                {
+                    filteredQuery = typedResult;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryCloseCustomFilterMethod<TEntity>(MethodInfo method, out MethodInfo? closedMethod)
+        {
+            if (!method.IsGenericMethodDefinition)
+            {
+                closedMethod = method;
+                return true;
+            }
+
+            var genericArguments = method.GetGenericArguments();
+
+            if (genericArguments.Length != 1)
+            {
+                closedMethod = null;
+                return false;
+            }
+
+            try
+            {
+                closedMethod = method.MakeGenericMethod(typeof(TEntity));
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                closedMethod = null;
+                return false;
+            }
+        }
+
+        private static bool IsSupportedValuesParameter(Type valuesParameterType)
+        {
+            return valuesParameterType == typeof(string[]) ||
+                   valuesParameterType == typeof(IReadOnlyList<string>) ||
+                   valuesParameterType == typeof(IEnumerable<string>);
+        }
+
+        private static object CreateValuesArgument(Type valuesParameterType, IReadOnlyList<string> values)
+        {
+            if (valuesParameterType == typeof(string[]))
+            {
+                return values.ToArray();
+            }
+
+            return values;
         }
 
         private Expression? BuildFilterExpression(PaginationFilterExpressionContext context)
@@ -347,11 +512,13 @@ namespace tools_dotnet.Pagination.Services
                 return false;
             }
 
-            foreach (var segment in fieldSegments)
+            for (var i = 0; i < fieldSegments.Length; i++)
             {
+                var segment = fieldSegments[i];
+                var isLeafSegment = i == fieldSegments.Length - 1;
                 var property = memberExpression.Type
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules));
+                    .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
 
                 if (property != null)
                 {
@@ -361,7 +528,7 @@ namespace tools_dotnet.Pagination.Services
 
                 var field = memberExpression.Type
                     .GetFields(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules));
+                    .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
 
                 if (field != null)
                 {
@@ -376,7 +543,7 @@ namespace tools_dotnet.Pagination.Services
             return true;
         }
 
-        private static bool MatchesSegment(MemberInfo memberInfo, string segment, bool applyFilterRules)
+        private static bool MatchesSegment(MemberInfo memberInfo, string segment, bool applyFilterRules, bool isLeafSegment)
         {
             var attribute = memberInfo.GetCustomAttribute<PaginationAttribute>();
             var memberNameMatches = string.Equals(memberInfo.Name, segment, StringComparison.OrdinalIgnoreCase);
@@ -394,7 +561,12 @@ namespace tools_dotnet.Pagination.Services
                 return true;
             }
 
-            return applyFilterRules ? attribute.CanFilter : attribute.CanSort;
+            if (isLeafSegment)
+            {
+                return applyFilterRules ? attribute.CanFilter : attribute.CanSort;
+            }
+
+            return applyFilterRules ? attribute.CanFilterSubProperties : attribute.CanSortSubProperties;
         }
 
         private static object InvokeOrderMethod(MethodInfo orderMethod, Type entityType, object source, LambdaExpression keySelector)
