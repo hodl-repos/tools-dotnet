@@ -1,0 +1,29 @@
+* text=auto eol=crlf working-tree-encoding=UTF-8
+
+# --- C# / Visual Studio specific files ---
+# Apply encoding and CRLF to source code files
+*.cs      text eol=crlf working-tree-encoding=UTF-8
+*.sln     text eol=crlf working-tree-encoding=UTF-8
+*.csproj  text eol=crlf working-tree-encoding=UTF-8
+*.vb      text eol=crlf working-tree-encoding=UTF-8
+*.txt     text eol=crlf working-tree-encoding=UTF-8
+*.json    text eol=crlf working-tree-encoding=UTF-8
+*.xml     text eol=crlf working-tree-encoding=UTF-8
+*.config  text eol=crlf working-tree-encoding=UTF-8
+*.md      text eol=crlf working-tree-encoding=UTF-8
+
+# --- Binary Files (DO NOT MODIFY LINE ENDINGS) ---
+# It is critical to treat these as binary so git doesn't corrupt them
+*.dll     binary
+*.exe     binary
+*.pdb     binary
+*.suo     binary
+*.user    binary
+*.cache   binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.ttf     binary
+*.woff    binary

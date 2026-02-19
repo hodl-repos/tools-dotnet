@@ -1,0 +1,3 @@
+[*.{js,ts,jsx,tsx,html,css,scss,json,md,cs,vb,xml,config,sln,csproj,txt}]
+charset = utf-8
+end_of_line = crlf
