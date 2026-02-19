@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using tools_dotnet.Paging.Impl;
 
 namespace tools_dotnet.Paging

@@ -4,14 +4,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
 using Shouldly;
 using Swashbuckle.AspNetCore.Swagger;
 using tools_dotnet.Paging;
 using tools_dotnet.Paging.Impl;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.OpenApi;
-using System.Collections.Generic;
+using Microsoft.OpenApi;
 
 namespace tools_dotnet.Tests.PaginationTest
 {
@@ -97,6 +96,7 @@ namespace tools_dotnet.Tests.PaginationTest
             var filtersParameter = GetQueryParameter(operation, "filters");
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
+            filtersParameter.Description.ShouldNotBeNull();
             filtersParameter.Description.ShouldContain("Allowed filter fields:");
             filtersParameter.Description.ShouldContain("`name` (string): ==, ==*, !=, !=*, @=, @=*, !@=, !@=*, _=, _=*, !_=, !_=*, _-=, _-=*, !_-=, !_-=*");
             filtersParameter.Description.ShouldContain("`age` (number): ==, !=, >, >=, <, <=");
@@ -106,6 +106,7 @@ namespace tools_dotnet.Tests.PaginationTest
             filtersParameter.Description.ShouldContain("`created_at` (date?): ==, !=, >, >=, <, <=");
             filtersParameter.Description.ShouldNotContain("NotDocumented");
 
+            sortsParameter.Description.ShouldNotBeNull();
             sortsParameter.Description.ShouldContain("Allowed sort fields:");
             sortsParameter.Description.ShouldContain("`name`");
             sortsParameter.Description.ShouldContain("`age`");
@@ -121,6 +122,7 @@ namespace tools_dotnet.Tests.PaginationTest
             var operation = GetOperation("/openapi-pagination-tests/explicit");
             var filtersParameter = GetQueryParameter(operation, "filters");
 
+            filtersParameter.Description.ShouldNotBeNull();
             filtersParameter.Description.ShouldContain("Allowed filter fields:");
             filtersParameter.Description.ShouldContain("`name` (string):");
             filtersParameter.Description.ShouldContain("`age` (number):");
@@ -133,10 +135,12 @@ namespace tools_dotnet.Tests.PaginationTest
             var filtersParameter = GetQueryParameter(operation, "filters");
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
+            filtersParameter.Description.ShouldNotBeNull();
             filtersParameter.Description.ShouldContain("`owner.display_name` (string):");
             filtersParameter.Description.ShouldContain("`owner.age` (number):");
             filtersParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
 
+            sortsParameter.Description.ShouldNotBeNull();
             sortsParameter.Description.ShouldContain("`owner.display_name`");
             sortsParameter.Description.ShouldNotContain("`owner.age`");
             sortsParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
@@ -165,14 +169,14 @@ namespace tools_dotnet.Tests.PaginationTest
             using var serviceProvider = services.BuildServiceProvider();
             var swaggerProvider = serviceProvider.GetRequiredService<ISwaggerProvider>();
             var document = swaggerProvider.GetSwagger("v1");
-            return document.Paths[path].Operations[OperationType.Get];
+            return document.Paths[path].Operations![HttpMethod.Get];
         }
 
-        private static OpenApiParameter GetQueryParameter(OpenApiOperation operation, string name)
+        private static IOpenApiParameter GetQueryParameter(OpenApiOperation operation, string name)
         {
-            return operation.Parameters.Single(x =>
+            return operation.Parameters!.Single(x =>
                 x.In == ParameterLocation.Query &&
-                string.Equals(x.Name, name, System.StringComparison.OrdinalIgnoreCase));
+                string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
         }
 
         private sealed class TestWebHostEnvironment : IWebHostEnvironment

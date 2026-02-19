@@ -1,4 +1,4 @@
-﻿namespace tools_dotnet.Dao.Entity
+namespace tools_dotnet.Dao.Entity
 {
     public interface IEntity
     {

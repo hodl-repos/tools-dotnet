@@ -13,22 +13,20 @@ namespace tools_dotnet.Pagination.OpenApi
         private const int MaxNestedDepth = 8;
 
         private static readonly IReadOnlyList<PaginationOperator> EqualityOperators =
-            new[] { PaginationOperator.Equal, PaginationOperator.NotEquals };
+            [PaginationOperator.Equal, PaginationOperator.NotEquals];
 
         private static readonly IReadOnlyList<PaginationOperator> ComparableOperators =
-            new[]
-            {
+            [
                 PaginationOperator.Equal,
                 PaginationOperator.NotEquals,
                 PaginationOperator.GreaterThan,
                 PaginationOperator.GreaterThanOrEqual,
                 PaginationOperator.LessThan,
                 PaginationOperator.LessThanOrEqual
-            };
+            ];
 
         private static readonly IReadOnlyList<PaginationOperator> StringOperators =
-            new[]
-            {
+            [
                 PaginationOperator.Equal,
                 PaginationOperator.EqualCaseInsensitive,
                 PaginationOperator.NotEquals,
@@ -45,7 +43,7 @@ namespace tools_dotnet.Pagination.OpenApi
                 PaginationOperator.EndsWithCaseInsensitive,
                 PaginationOperator.NotEndsWith,
                 PaginationOperator.NotEndsWithCaseInsensitive
-            };
+            ];
 
         private static readonly HashSet<Type> TypesWithComparisonOperators = new()
         {
@@ -223,6 +221,7 @@ namespace tools_dotnet.Pagination.OpenApi
                     }
 
                     var nestedType = Nullable.GetUnderlyingType(memberType) ?? memberType;
+
                     CollectDescriptors(
                         nestedType,
                         fieldPath,

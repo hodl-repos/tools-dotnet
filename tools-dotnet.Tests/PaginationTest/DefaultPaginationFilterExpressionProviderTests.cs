@@ -47,7 +47,7 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Apply_ShouldWorkWithPostgreSqlProviderDropIn()
         {
-            var processor = new PaginationProcessor(filterExpressionProviders: new[] { new PostgreSqlPaginationFilterExpressionProvider() });
+            var processor = new PaginationProcessor(filterExpressionProviders: [new PostgreSqlPaginationFilterExpressionProvider()]);
             var model = new PaginationModel
             {
                 Filters = "name==*milk"
@@ -68,7 +68,7 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Apply_ShouldWorkWithSqlServerProviderDropIn()
         {
-            var processor = new PaginationProcessor(filterExpressionProviders: new[] { new SqlServerPaginationFilterExpressionProvider() });
+            var processor = new PaginationProcessor(filterExpressionProviders: [new SqlServerPaginationFilterExpressionProvider()]);
             var model = new PaginationModel
             {
                 Filters = "name==*milk"
@@ -91,15 +91,15 @@ namespace tools_dotnet.Tests.PaginationTest
             var parameterExpression = Expression.Parameter(typeof(ProviderEntity), "entity");
             var memberExpression = Expression.Property(parameterExpression, nameof(ProviderEntity.Name));
             var filterTerm = new PaginationFilterTerm(
-                new[] { nameof(ProviderEntity.Name) },
+                [nameof(ProviderEntity.Name)],
                 @operator,
-                new[] { value });
+                [value]);
 
             return new PaginationFilterExpressionContext(
                 parameterExpression,
                 memberExpression,
                 filterTerm,
-                new object?[] { value },
+                [value],
                 dataForCustomMethods: null);
         }
 

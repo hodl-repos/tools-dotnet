@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using tools_dotnet.Pagination.Services;
 using System.Linq.Expressions;

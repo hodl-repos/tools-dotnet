@@ -80,7 +80,7 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Apply_ShouldUseCustomFilterMethod_WhenNoMemberMatches()
         {
-            var processor = new PaginationProcessor(customFilterMethods: new[] { new TestCustomFilterMethods() });
+            var processor = new PaginationProcessor(customFilterMethods: [new TestCustomFilterMethods()]);
             var model = new PaginationModel
             {
                 Filters = "is_adult==21"
@@ -96,13 +96,13 @@ namespace tools_dotnet.Tests.PaginationTest
             var result = processor.Apply(model, source, applySorting: false, applyPagination: false).ToList();
 
             result.Count.ShouldBe(2);
-            result.Select(x => x.Name).ShouldBe(new[] { "Bob", "Clara" });
+            result.Select(x => x.Name).ShouldBe(["Bob", "Clara"]);
         }
 
         [Test]
         public void Apply_ShouldUseGenericCustomFilterMethod_WhenConstraintMatches()
         {
-            var processor = new PaginationProcessor(customFilterMethods: new[] { new TestCustomFilterMethods() });
+            var processor = new PaginationProcessor(customFilterMethods: [new TestCustomFilterMethods()]);
             var model = new PaginationModel
             {
                 Filters = "by_name==clara"
@@ -138,7 +138,7 @@ namespace tools_dotnet.Tests.PaginationTest
 
             var result = processor.Apply(model, source, applySorting: false, applyPagination: false).ToList();
 
-            result.Select(x => x.Id).ShouldBe(new[] { 1 });
+            result.Select(x => x.Id).ShouldBe([1]);
         }
 
         [Test]
@@ -158,7 +158,7 @@ namespace tools_dotnet.Tests.PaginationTest
 
             var result = processor.Apply(model, source, applySorting: false, applyPagination: false).ToList();
 
-            result.Select(x => x.Id).ShouldBe(new[] { 1, 2 });
+            result.Select(x => x.Id).ShouldBe([1, 2]);
         }
 
         private sealed class TestEntity

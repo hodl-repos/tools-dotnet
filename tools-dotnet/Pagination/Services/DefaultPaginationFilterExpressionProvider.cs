@@ -11,9 +11,9 @@ namespace tools_dotnet.Pagination.Services
     /// </summary>
     public class DefaultPaginationFilterExpressionProvider : IPaginationFilterExpressionProvider
     {
-        private static readonly MethodInfo ContainsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
-        private static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(nameof(string.StartsWith), new[] { typeof(string) })!;
-        private static readonly MethodInfo EndsWithMethod = typeof(string).GetMethod(nameof(string.EndsWith), new[] { typeof(string) })!;
+        private static readonly MethodInfo ContainsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
+        private static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(nameof(string.StartsWith), [typeof(string)])!;
+        private static readonly MethodInfo EndsWithMethod = typeof(string).GetMethod(nameof(string.EndsWith), [typeof(string)])!;
         private static readonly MethodInfo ToUpperMethod = typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!;
         private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
         private readonly PaginationCaseInsensitiveNormalization _caseInsensitiveNormalization;
@@ -110,12 +110,15 @@ namespace tools_dotnet.Pagination.Services
                         normalizedMemberExpression = Expression.Call(memberExpression, ToUpperMethod);
                         normalizedValue = stringValue.ToUpperInvariant();
                         break;
+
                     case PaginationCaseInsensitiveNormalization.ToLower:
                         normalizedMemberExpression = Expression.Call(memberExpression, ToLowerMethod);
                         normalizedValue = stringValue.ToLowerInvariant();
                         break;
+
                     case PaginationCaseInsensitiveNormalization.None:
                         break;
+
                     default:
                         throw new ArgumentOutOfRangeException(nameof(caseInsensitiveNormalization), caseInsensitiveNormalization, "Unknown case-insensitive normalization strategy.");
                 }

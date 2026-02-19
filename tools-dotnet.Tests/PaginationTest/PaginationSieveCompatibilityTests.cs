@@ -56,8 +56,8 @@ namespace tools_dotnet.Tests.PaginationTest
 
             result.Filters.Count.ShouldBe(1);
             result.Filters[0].Operator.ShouldBe(expectedOperator);
-            result.Filters[0].Fields.ShouldBe(new[] { "Title" });
-            result.Filters[0].Values.ShouldBe(new[] { "value" });
+            result.Filters[0].Fields.ShouldBe(["Title"]);
+            result.Filters[0].Values.ShouldBe(["value"]);
         }
 
         [Test]
@@ -72,11 +72,11 @@ namespace tools_dotnet.Tests.PaginationTest
             var result = deserializer.Deserialize(model);
 
             result.Filters.Count.ShouldBe(4);
-            result.Filters[0].Fields.ShouldBe(new[] { "Title", "Description" });
-            result.Filters[0].Values.ShouldBe(new[] { "bread|milk" });
-            result.Filters[1].Values.ShouldBe(new[] { "eq==ne!=gt>lt<ge>=le<=contains@=starts_=ends_-=star*" });
-            result.Filters[2].Values.ShouldBe(new[] { @"c:\repo\sample" });
-            result.Filters[3].Values.ShouldBe(new[] { @"\null" });
+            result.Filters[0].Fields.ShouldBe(["Title", "Description"]);
+            result.Filters[0].Values.ShouldBe(["bread|milk"]);
+            result.Filters[1].Values.ShouldBe(["eq==ne!=gt>lt<ge>=le<=contains@=starts_=ends_-=star*"]);
+            result.Filters[2].Values.ShouldBe([@"c:\repo\sample"]);
+            result.Filters[3].Values.ShouldBe([@"\null"]);
         }
 
         [TestCaseSource(nameof(CaseInsensitiveFilterCases))]

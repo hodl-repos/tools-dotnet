@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using tools_dotnet.Dto;
 using tools_dotnet.Paging;

@@ -1,4 +1,4 @@
-﻿namespace tools_dotnet.Paging
+namespace tools_dotnet.Paging
 {
     /// <summary>
     /// Query contract used by API endpoints for filtering, sorting, and paging.

@@ -21,12 +21,12 @@ namespace tools_dotnet.Pagination.Attributes
         /// <summary>
         /// Gets or sets whether nested members below this member can be used in filters.
         /// </summary>
-        public bool CanFilterSubProperties { get; set; } = true;
+        public bool CanFilterSubProperties { get; set; } = false;
 
         /// <summary>
         /// Gets or sets whether nested members below this member can be used in sorting.
         /// </summary>
-        public bool CanSortSubProperties { get; set; } = true;
+        public bool CanSortSubProperties { get; set; } = false;
 
         /// <summary>
         /// Gets or sets an external name for the member used in filter/sort queries.

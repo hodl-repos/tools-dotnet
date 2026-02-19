@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Net.Mail;
 
 namespace tools_dotnet.Utility

@@ -1,4 +1,4 @@
-﻿namespace tools_dotnet.Errors
+namespace tools_dotnet.Errors
 {
     public class ApiNoPermissionError : GenericApiError
     {

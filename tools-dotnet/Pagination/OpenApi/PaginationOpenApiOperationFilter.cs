@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
 using tools_dotnet.Paging;
 using System;
 using System.Collections.Generic;
@@ -7,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.OpenApi;
 
 namespace tools_dotnet.Pagination.OpenApi
 {
@@ -156,7 +156,7 @@ namespace tools_dotnet.Pagination.OpenApi
             return null;
         }
 
-        private static void AppendQueryParameterDescription(IList<OpenApiParameter> parameters, string parameterName, string description)
+        private static void AppendQueryParameterDescription(IList<IOpenApiParameter> parameters, string parameterName, string description)
         {
             if (string.IsNullOrWhiteSpace(description))
             {

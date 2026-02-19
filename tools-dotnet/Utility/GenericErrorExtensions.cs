@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using System;
 using tools_dotnet.Errors;
 using tools_dotnet.Exceptions;

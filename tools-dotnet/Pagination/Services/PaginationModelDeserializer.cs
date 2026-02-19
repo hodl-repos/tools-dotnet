@@ -13,6 +13,7 @@ namespace tools_dotnet.Pagination.Services
     {
         private const int DefaultPage = 1;
         private const int DefaultPageSize = 25;
+
         private static readonly HashSet<char> EscapableCharacters = new()
         {
             ',',
@@ -184,7 +185,7 @@ namespace tools_dotnet.Pagination.Services
         {
             if (input.Length == 0)
             {
-                return new[] { string.Empty };
+                return [string.Empty];
             }
 
             var result = new List<string>();

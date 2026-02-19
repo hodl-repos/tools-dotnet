@@ -119,8 +119,7 @@ namespace tools_dotnet.Pagination.Models
                 .OrderByDescending(x => x.Length)
                 .ToArray());
 
-        private PaginationOperator(string id, string name)
-            : base(id, name)
+        private PaginationOperator(string id, string name) : base(id, name)
         {
         }
 

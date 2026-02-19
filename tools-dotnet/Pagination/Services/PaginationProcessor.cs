@@ -572,7 +572,7 @@ namespace tools_dotnet.Pagination.Services
         private static object InvokeOrderMethod(MethodInfo orderMethod, Type entityType, object source, LambdaExpression keySelector)
         {
             var closedMethod = orderMethod.MakeGenericMethod(entityType, keySelector.ReturnType);
-            return closedMethod.Invoke(null, new object[] { source, keySelector })!;
+            return closedMethod.Invoke(null, [source, keySelector])!;
         }
 
         private static MethodInfo GetOrderMethod(string methodName)
