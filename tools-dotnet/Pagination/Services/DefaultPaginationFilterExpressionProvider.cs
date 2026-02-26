@@ -1,8 +1,8 @@
-using tools_dotnet.Pagination.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using tools_dotnet.Pagination.Models;
 
 namespace tools_dotnet.Pagination.Services
 {
@@ -11,11 +11,26 @@ namespace tools_dotnet.Pagination.Services
     /// </summary>
     public class DefaultPaginationFilterExpressionProvider : IPaginationFilterExpressionProvider
     {
-        private static readonly MethodInfo ContainsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
-        private static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(nameof(string.StartsWith), [typeof(string)])!;
-        private static readonly MethodInfo EndsWithMethod = typeof(string).GetMethod(nameof(string.EndsWith), [typeof(string)])!;
-        private static readonly MethodInfo ToUpperMethod = typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!;
-        private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
+        private static readonly MethodInfo ContainsMethod = typeof(string).GetMethod(
+            nameof(string.Contains),
+            [typeof(string)]
+        )!;
+        private static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(
+            nameof(string.StartsWith),
+            [typeof(string)]
+        )!;
+        private static readonly MethodInfo EndsWithMethod = typeof(string).GetMethod(
+            nameof(string.EndsWith),
+            [typeof(string)]
+        )!;
+        private static readonly MethodInfo ToUpperMethod = typeof(string).GetMethod(
+            nameof(string.ToUpper),
+            Type.EmptyTypes
+        )!;
+        private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(
+            nameof(string.ToLower),
+            Type.EmptyTypes
+        )!;
         private readonly PaginationCaseInsensitiveNormalization _caseInsensitiveNormalization;
 
         /// <summary>
@@ -23,13 +38,18 @@ namespace tools_dotnet.Pagination.Services
         /// </summary>
         /// <param name="caseInsensitiveNormalization">Normalization strategy for case-insensitive operators.</param>
         public DefaultPaginationFilterExpressionProvider(
-            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization = PaginationCaseInsensitiveNormalization.ToUpper)
+            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization =
+                PaginationCaseInsensitiveNormalization.ToUpper
+        )
         {
             _caseInsensitiveNormalization = caseInsensitiveNormalization;
         }
 
         /// <inheritdoc />
-        public bool TryBuildExpression(PaginationFilterExpressionContext context, out Expression? expression)
+        public bool TryBuildExpression(
+            PaginationFilterExpressionContext context,
+            out Expression? expression
+        )
         {
             if (context == null)
             {
@@ -47,7 +67,12 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var typedValue in context.TypedValues)
             {
-                var singleExpression = BuildSingleExpression(context.MemberExpression, context.FilterTerm.Operator, typedValue, _caseInsensitiveNormalization);
+                var singleExpression = BuildSingleExpression(
+                    context.MemberExpression,
+                    context.FilterTerm.Operator,
+                    typedValue,
+                    _caseInsensitiveNormalization
+                );
 
                 if (singleExpression != null)
                 {
@@ -76,11 +101,17 @@ namespace tools_dotnet.Pagination.Services
             Expression memberExpression,
             PaginationOperator @operator,
             object? typedValue,
-            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization)
+            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization
+        )
         {
             if (@operator.IsStringOperator)
             {
-                return BuildStringExpression(memberExpression, @operator, typedValue, caseInsensitiveNormalization);
+                return BuildStringExpression(
+                    memberExpression,
+                    @operator,
+                    typedValue,
+                    caseInsensitiveNormalization
+                );
             }
 
             return BuildComparableExpression(memberExpression, @operator, typedValue);
@@ -90,7 +121,8 @@ namespace tools_dotnet.Pagination.Services
             Expression memberExpression,
             PaginationOperator @operator,
             object? typedValue,
-            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization)
+            PaginationCaseInsensitiveNormalization caseInsensitiveNormalization
+        )
         {
             if (memberExpression.Type != typeof(string) || typedValue is not string stringValue)
             {
@@ -107,12 +139,18 @@ namespace tools_dotnet.Pagination.Services
                 switch (caseInsensitiveNormalization)
                 {
                     case PaginationCaseInsensitiveNormalization.ToUpper:
-                        normalizedMemberExpression = Expression.Call(memberExpression, ToUpperMethod);
+                        normalizedMemberExpression = Expression.Call(
+                            memberExpression,
+                            ToUpperMethod
+                        );
                         normalizedValue = stringValue.ToUpperInvariant();
                         break;
 
                     case PaginationCaseInsensitiveNormalization.ToLower:
-                        normalizedMemberExpression = Expression.Call(memberExpression, ToLowerMethod);
+                        normalizedMemberExpression = Expression.Call(
+                            memberExpression,
+                            ToLowerMethod
+                        );
                         normalizedValue = stringValue.ToLowerInvariant();
                         break;
 
@@ -120,7 +158,11 @@ namespace tools_dotnet.Pagination.Services
                         break;
 
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(caseInsensitiveNormalization), caseInsensitiveNormalization, "Unknown case-insensitive normalization strategy.");
+                        throw new ArgumentOutOfRangeException(
+                            nameof(caseInsensitiveNormalization),
+                            caseInsensitiveNormalization,
+                            "Unknown case-insensitive normalization strategy."
+                        );
                 }
             }
 
@@ -128,32 +170,56 @@ namespace tools_dotnet.Pagination.Services
 
             Expression positive;
 
-            if (@operator == PaginationOperator.EqualCaseInsensitive || @operator == PaginationOperator.NotEqualsCaseInsensitive)
+            if (
+                @operator == PaginationOperator.EqualCaseInsensitive
+                || @operator == PaginationOperator.NotEqualsCaseInsensitive
+            )
             {
-                positive = Expression.AndAlso(notNullExpression, Expression.Equal(normalizedMemberExpression, valueExpression));
+                positive = Expression.AndAlso(
+                    notNullExpression,
+                    Expression.Equal(normalizedMemberExpression, valueExpression)
+                );
             }
-            else if (@operator == PaginationOperator.Contains ||
-                     @operator == PaginationOperator.NotContains ||
-                     @operator == PaginationOperator.ContainsCaseInsensitive ||
-                     @operator == PaginationOperator.NotContainsCaseInsensitive)
+            else if (
+                @operator == PaginationOperator.Contains
+                || @operator == PaginationOperator.NotContains
+                || @operator == PaginationOperator.ContainsCaseInsensitive
+                || @operator == PaginationOperator.NotContainsCaseInsensitive
+            )
             {
-                var containsExpression = Expression.Call(normalizedMemberExpression, ContainsMethod, valueExpression);
+                var containsExpression = Expression.Call(
+                    normalizedMemberExpression,
+                    ContainsMethod,
+                    valueExpression
+                );
                 positive = Expression.AndAlso(notNullExpression, containsExpression);
             }
-            else if (@operator == PaginationOperator.StartsWith ||
-                     @operator == PaginationOperator.NotStartsWith ||
-                     @operator == PaginationOperator.StartsWithCaseInsensitive ||
-                     @operator == PaginationOperator.NotStartsWithCaseInsensitive)
+            else if (
+                @operator == PaginationOperator.StartsWith
+                || @operator == PaginationOperator.NotStartsWith
+                || @operator == PaginationOperator.StartsWithCaseInsensitive
+                || @operator == PaginationOperator.NotStartsWithCaseInsensitive
+            )
             {
-                var startsWithExpression = Expression.Call(normalizedMemberExpression, StartsWithMethod, valueExpression);
+                var startsWithExpression = Expression.Call(
+                    normalizedMemberExpression,
+                    StartsWithMethod,
+                    valueExpression
+                );
                 positive = Expression.AndAlso(notNullExpression, startsWithExpression);
             }
-            else if (@operator == PaginationOperator.EndsWith ||
-                     @operator == PaginationOperator.NotEndsWith ||
-                     @operator == PaginationOperator.EndsWithCaseInsensitive ||
-                     @operator == PaginationOperator.NotEndsWithCaseInsensitive)
+            else if (
+                @operator == PaginationOperator.EndsWith
+                || @operator == PaginationOperator.NotEndsWith
+                || @operator == PaginationOperator.EndsWithCaseInsensitive
+                || @operator == PaginationOperator.NotEndsWithCaseInsensitive
+            )
             {
-                var endsWithExpression = Expression.Call(normalizedMemberExpression, EndsWithMethod, valueExpression);
+                var endsWithExpression = Expression.Call(
+                    normalizedMemberExpression,
+                    EndsWithMethod,
+                    valueExpression
+                );
                 positive = Expression.AndAlso(notNullExpression, endsWithExpression);
             }
             else
@@ -169,9 +235,17 @@ namespace tools_dotnet.Pagination.Services
             return positive;
         }
 
-        private static Expression? BuildComparableExpression(Expression memberExpression, PaginationOperator @operator, object? typedValue)
+        private static Expression? BuildComparableExpression(
+            Expression memberExpression,
+            PaginationOperator @operator,
+            object? typedValue
+        )
         {
-            if (typedValue == null && @operator != PaginationOperator.Equal && @operator != PaginationOperator.NotEquals)
+            if (
+                typedValue == null
+                && @operator != PaginationOperator.Equal
+                && @operator != PaginationOperator.NotEquals
+            )
             {
                 return null;
             }

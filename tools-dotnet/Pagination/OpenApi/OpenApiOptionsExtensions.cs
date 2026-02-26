@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.OpenApi;
 using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.OpenApi;
 using tools_dotnet.Pagination.Services;
 
 namespace tools_dotnet.Pagination.OpenApi
@@ -20,7 +20,8 @@ namespace tools_dotnet.Pagination.OpenApi
         public static OpenApiOptions AddPaginationOpenApiSupport(
             this OpenApiOptions options,
             IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
             if (options == null)
             {
@@ -33,10 +34,11 @@ namespace tools_dotnet.Pagination.OpenApi
                 return options;
             }
 
-            options.AddOperationTransformer(new PaginationOpenApiOperationTransformer(
-                customFilterMethods,
-                customSortMethods));
+            options.AddOperationTransformer(
+                new PaginationOpenApiOperationTransformer(customFilterMethods, customSortMethods)
+            );
             return options;
         }
     }
 }
+

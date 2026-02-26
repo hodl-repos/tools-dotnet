@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using tools_dotnet.Pagination.Services;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using tools_dotnet.Pagination.Services;
 
 namespace tools_dotnet.Pagination.OpenApi
 {
@@ -22,10 +22,13 @@ namespace tools_dotnet.Pagination.OpenApi
         /// <param name="customSortMethods">Optional custom sort method containers used for OpenAPI metadata enrichment.</param>
         public PaginationOpenApiOperationFilter(
             IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
-            _customFilterMethods = customFilterMethods?.ToArray() ?? Array.Empty<IPaginationCustomFilterMethods>();
-            _customSortMethods = customSortMethods?.ToArray() ?? Array.Empty<IPaginationCustomSortsMethods>();
+            _customFilterMethods =
+                customFilterMethods?.ToArray() ?? Array.Empty<IPaginationCustomFilterMethods>();
+            _customSortMethods =
+                customSortMethods?.ToArray() ?? Array.Empty<IPaginationCustomSortsMethods>();
         }
 
         /// <summary>
@@ -50,7 +53,9 @@ namespace tools_dotnet.Pagination.OpenApi
                 context.MethodInfo,
                 context.ApiDescription.ActionDescriptor.EndpointMetadata,
                 _customFilterMethods,
-                _customSortMethods);
+                _customSortMethods
+            );
         }
     }
 }
+

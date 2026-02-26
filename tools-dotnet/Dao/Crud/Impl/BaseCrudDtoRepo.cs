@@ -1,33 +1,35 @@
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dto;
 using tools_dotnet.Exceptions;
+using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
 using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
-    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto, TInputDto> :
-        BaseCrudRepo<TEntity, TIdType>,
-        ICrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
+    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
+        : BaseCrudRepo<TEntity, TIdType>,
+            ICrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
-        protected BaseCrudDtoRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
-            : base(dbContext, mapper, paginationProcessor)
-        {
-        }
+        protected BaseCrudDtoRepo(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
 
         public virtual async Task<TIdType> AddAsync(TInputDto item)
         {
@@ -44,7 +46,9 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync();
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter
+        )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
@@ -58,21 +62,39 @@ namespace tools_dotnet.Dao.Crud.Impl
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter
+        )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
                 .AsNoTracking()
                 .Where(filter);
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper
+            );
         }
 
-        public virtual async Task<TDto?> FindDtoAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true)
+        public virtual async Task<TDto?> FindDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            bool throwOnMultipleFound = true,
+            bool ignoreDeletedWithAuditable = true
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), ignoreDeletedWithAuditable)
+            var query = SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    ignoreDeletedWithAuditable
+                )
                 .AsNoTracking()
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider);
@@ -131,13 +153,17 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
-    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto> : BaseCrudDtoRepo<TEntity, TIdType, TDto, TDto>
+    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto>
+        : BaseCrudDtoRepo<TEntity, TIdType, TDto, TDto>
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
     {
-        protected BaseCrudDtoRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor) : base(dbContext, mapper, paginationProcessor)
-        {
-        }
+        protected BaseCrudDtoRepo(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
     }
 }

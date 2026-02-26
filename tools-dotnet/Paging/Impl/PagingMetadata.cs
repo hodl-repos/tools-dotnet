@@ -72,10 +72,7 @@ namespace tools_dotnet.Paging.Impl
         /// </summary>
         public bool HasNextPage
         {
-            get
-            {
-                return PageNumber >= 1 && PageNumber < PageCount;
-            }
+            get { return PageNumber >= 1 && PageNumber < PageCount; }
         }
 
         /// <summary>
@@ -83,10 +80,7 @@ namespace tools_dotnet.Paging.Impl
         /// </summary>
         public bool IsFirstPage
         {
-            get
-            {
-                return PageNumber == 1;
-            }
+            get { return PageNumber == 1; }
         }
     }
 }

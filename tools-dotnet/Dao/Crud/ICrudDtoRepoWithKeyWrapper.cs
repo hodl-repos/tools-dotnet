@@ -8,9 +8,9 @@ using tools_dotnet.Dao.Paging;
 
 namespace tools_dotnet.Dao.Crud
 {
-    public interface ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto> :
-        ICrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
-        ISortFilterAndPageDtoRepo<TEntity, TDto>
+    public interface ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
+        : ICrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
+            ISortFilterAndPageDtoRepo<TEntity, TDto>
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
@@ -27,10 +27,9 @@ namespace tools_dotnet.Dao.Crud
         Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper);
     }
 
-    public interface ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto> : ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>
+    public interface ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
+        : ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
-        where TDto : class
-    {
-    }
+        where TDto : class { }
 }

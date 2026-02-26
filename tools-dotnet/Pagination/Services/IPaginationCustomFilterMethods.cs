@@ -13,7 +13,5 @@ namespace tools_dotnet.Pagination.Services
     /// <c>IQueryable&lt;TEntity&gt; MethodName(IQueryable&lt;TEntity&gt; source, string op, string[] values)</c>,
     /// and the same with an additional fourth <c>object[]?</c> argument for custom data.
     /// </remarks>
-    public interface IPaginationCustomFilterMethods
-    {
-    }
+    public interface IPaginationCustomFilterMethods { }
 }

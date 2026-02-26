@@ -8,25 +8,25 @@ namespace tools_dotnet.Exceptions
 
         public string? RequestConcurrencyStamp { get; private set; }
 
-        public ConcurrentModificationException()
-        {
-        }
+        public ConcurrentModificationException() { }
 
-        public ConcurrentModificationException(string dbConcurrencyStamp,
-            string requestConcurrencyStamp)
-            : base($"Concurrency stamps do not match. Database: {dbConcurrencyStamp}, " +
-                $"Request: {requestConcurrencyStamp}")
+        public ConcurrentModificationException(
+            string dbConcurrencyStamp,
+            string requestConcurrencyStamp
+        )
+            : base(
+                $"Concurrency stamps do not match. Database: {dbConcurrencyStamp}, "
+                    + $"Request: {requestConcurrencyStamp}"
+            )
         {
             DbConcurrencyStamp = dbConcurrencyStamp;
             RequestConcurrencyStamp = requestConcurrencyStamp;
         }
 
-        public ConcurrentModificationException(string message) : base(message)
-        {
-        }
+        public ConcurrentModificationException(string message)
+            : base(message) { }
 
-        public ConcurrentModificationException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
+        public ConcurrentModificationException(string message, Exception innerException)
+            : base(message, innerException) { }
     }
 }

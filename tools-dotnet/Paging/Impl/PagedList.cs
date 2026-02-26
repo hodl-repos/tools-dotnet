@@ -12,8 +12,7 @@ namespace tools_dotnet.Paging.Impl
         /// <summary>
         /// Creates an empty paged list.
         /// </summary>
-        public PagedList()
-        { }
+        public PagedList() { }
 
         /// <summary>
         /// Creates a paged list from an item sequence and paging values.

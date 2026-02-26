@@ -6,7 +6,9 @@ namespace tools_dotnet.Pagination.OpenApi
 {
     internal static class PaginationOpenApiDescriptionBuilder
     {
-        public static string BuildFiltersDescription(IReadOnlyList<PaginationOpenApiFieldDescriptor> fields)
+        public static string BuildFiltersDescription(
+            IReadOnlyList<PaginationOpenApiFieldDescriptor> fields
+        )
         {
             if (fields == null)
             {
@@ -22,42 +24,42 @@ namespace tools_dotnet.Pagination.OpenApi
             {
                 "Supported syntax: field{operator}value. Use ',' for AND and '|' for OR (fields and values).",
                 "Escape special characters with '\\'. Use 'null' for null, and '\\null' for the literal text 'null'.",
-                "Allowed filter fields:"
+                "Allowed filter fields:",
             };
 
             foreach (var field in fields.Where(x => x.CanFilter))
             {
-                var operators = field.Operators.Count == 0
-                    ? "custom"
-                    : string.Join(", ", field.Operators.Select(x => x.Id));
-                var filterTypeDisplayName = field.FilterTypeDisplayNameOverride ??
-                                            PaginationOpenApiMetadataProvider.GetTypeDisplayName(field.MemberType);
+                var operators =
+                    field.Operators.Count == 0
+                        ? "custom"
+                        : string.Join(", ", field.Operators.Select(x => x.Id));
+                var filterTypeDisplayName =
+                    field.FilterTypeDisplayNameOverride
+                    ?? PaginationOpenApiMetadataProvider.GetTypeDisplayName(field.MemberType);
                 lines.Add($"- `{field.Name}` ({filterTypeDisplayName}): {operators}");
             }
 
             return string.Join(Environment.NewLine, lines);
         }
 
-        public static string BuildSortsDescription(IReadOnlyList<PaginationOpenApiFieldDescriptor> fields)
+        public static string BuildSortsDescription(
+            IReadOnlyList<PaginationOpenApiFieldDescriptor> fields
+        )
         {
             if (fields == null)
             {
                 throw new ArgumentNullException(nameof(fields));
             }
 
-            var sortableFields = fields
-                .Where(x => x.CanSort)
-                .Select(x => $"`{x.Name}`")
-                .ToArray();
+            var sortableFields = fields.Where(x => x.CanSort).Select(x => $"`{x.Name}`").ToArray();
 
             if (sortableFields.Length == 0)
             {
                 return string.Empty;
             }
 
-            return
-                $"Supported syntax: field for ascending, -field for descending, comma for multiple sorts.{Environment.NewLine}" +
-                $"Allowed sort fields: {string.Join(", ", sortableFields)}";
+            return $"Supported syntax: field for ascending, -field for descending, comma for multiple sorts.{Environment.NewLine}"
+                + $"Allowed sort fields: {string.Join(", ", sortableFields)}";
         }
     }
 }

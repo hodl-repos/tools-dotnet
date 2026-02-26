@@ -13,7 +13,6 @@ namespace tools_dotnet.Pagination.Services
     /// <c>IQueryable&lt;TEntity&gt; MethodName(IQueryable&lt;TEntity&gt; source, bool useThenBy, bool desc)</c>,
     /// and the same with an additional fourth <c>object[]?</c> argument for custom data.
     /// </remarks>
-    public interface IPaginationCustomSortsMethods
-    {
-    }
+    public interface IPaginationCustomSortsMethods { }
 }
+

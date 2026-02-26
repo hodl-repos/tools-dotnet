@@ -1,16 +1,16 @@
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dto;
 using tools_dotnet.Exceptions;
+using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
 using tools_dotnet.Utility;
 
@@ -24,11 +24,16 @@ namespace tools_dotnet.Dao.Crud.Impl
         protected readonly IPaginationProcessor _paginationProcessor;
         protected readonly IMapper _mapper;
 
-        protected BaseCrudRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
+        protected BaseCrudRepo(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _paginationProcessor = paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
+            _paginationProcessor =
+                paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
         }
 
         public virtual async Task<TIdType> AddAsync(TEntity item)
@@ -62,7 +67,9 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await SetupQueryModifications(_dbContext.Set<TEntity>()).ToListAsync();
         }
 
-        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters)
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> filters
+        )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filters)
@@ -76,16 +83,28 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).Where(filter).AsNoTracking();
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filter)
+                .AsNoTracking();
 
             return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
         }
 
-        public virtual async Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true)
+        public virtual async Task<TEntity?> FindAsync(
+            Expression<Func<TEntity, bool>> filter,
+            bool throwOnMultipleFound = true,
+            bool ignoreDeletedWithAuditable = true
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), ignoreDeletedWithAuditable)
+            var query = SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    ignoreDeletedWithAuditable
+                )
                 .Where(filter);
 
             if (throwOnMultipleFound)
@@ -103,9 +122,15 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await GetByIdInternalAsync(id, false);
         }
 
-        protected async Task<TEntity> GetByIdInternalAsync(TIdType id, bool ignoreDeletedWithAuditable = true)
+        protected async Task<TEntity> GetByIdInternalAsync(
+            TIdType id,
+            bool ignoreDeletedWithAuditable = true
+        )
         {
-            var entity = await SetupQueryModifications(_dbContext.Set<TEntity>(), ignoreDeletedWithAuditable)
+            var entity = await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    ignoreDeletedWithAuditable
+                )
                 .FirstOrDefaultAsync(x => x.Id.Equals(id));
 
             if (entity == null)
@@ -165,7 +190,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             catch (DbUpdateException ex)
             {
                 // foreign key violation
-                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation)
+                if (
+                    ex.InnerException is PostgresException pgEx
+                    && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation
+                )
                 {
                     throw new DependentItemException(pgEx.Message, true);
                 }
@@ -174,7 +202,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        protected virtual IQueryable<TEntity> SetupQueryModifications(IQueryable<TEntity> query, bool ignoreDeletedWithAuditable = true)
+        protected virtual IQueryable<TEntity> SetupQueryModifications(
+            IQueryable<TEntity> query,
+            bool ignoreDeletedWithAuditable = true
+        )
         {
             if (ignoreDeletedWithAuditable)
             {

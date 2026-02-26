@@ -1,5 +1,3 @@
-using tools_dotnet.Pagination.Models;
-using tools_dotnet.Pagination.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +5,8 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using tools_dotnet.Pagination.Attributes;
+using tools_dotnet.Pagination.Models;
 
 namespace tools_dotnet.Pagination.Services
 {
@@ -15,10 +15,16 @@ namespace tools_dotnet.Pagination.Services
     /// </summary>
     public class PaginationProcessor : IPaginationProcessor
     {
-        private static readonly MethodInfo OrderByMethod = GetOrderMethod(nameof(Queryable.OrderBy));
-        private static readonly MethodInfo OrderByDescendingMethod = GetOrderMethod(nameof(Queryable.OrderByDescending));
+        private static readonly MethodInfo OrderByMethod = GetOrderMethod(
+            nameof(Queryable.OrderBy)
+        );
+        private static readonly MethodInfo OrderByDescendingMethod = GetOrderMethod(
+            nameof(Queryable.OrderByDescending)
+        );
         private static readonly MethodInfo ThenByMethod = GetOrderMethod(nameof(Queryable.ThenBy));
-        private static readonly MethodInfo ThenByDescendingMethod = GetOrderMethod(nameof(Queryable.ThenByDescending));
+        private static readonly MethodInfo ThenByDescendingMethod = GetOrderMethod(
+            nameof(Queryable.ThenByDescending)
+        );
 
         private readonly IPaginationModelDeserializer _deserializer;
         private readonly IReadOnlyList<IPaginationFilterExpressionProvider> _filterExpressionProviders;
@@ -36,11 +42,14 @@ namespace tools_dotnet.Pagination.Services
             IPaginationModelDeserializer? deserializer = null,
             IEnumerable<IPaginationFilterExpressionProvider>? filterExpressionProviders = null,
             IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
             _deserializer = deserializer ?? new PaginationModelDeserializer();
 
-            var providers = filterExpressionProviders?.ToList() ?? new List<IPaginationFilterExpressionProvider>();
+            var providers =
+                filterExpressionProviders?.ToList()
+                ?? new List<IPaginationFilterExpressionProvider>();
 
             if (providers.Count == 0)
             {
@@ -48,12 +57,14 @@ namespace tools_dotnet.Pagination.Services
             }
 
             _filterExpressionProviders = providers;
-            _customFilterMethods = customFilterMethods == null
-                ? Array.Empty<IPaginationCustomFilterMethods>()
-                : customFilterMethods.ToList();
-            _customSortMethods = customSortMethods == null
-                ? Array.Empty<IPaginationCustomSortsMethods>()
-                : customSortMethods.ToList();
+            _customFilterMethods =
+                customFilterMethods == null
+                    ? Array.Empty<IPaginationCustomFilterMethods>()
+                    : customFilterMethods.ToList();
+            _customSortMethods =
+                customSortMethods == null
+                    ? Array.Empty<IPaginationCustomSortsMethods>()
+                    : customSortMethods.ToList();
         }
 
         /// <inheritdoc />
@@ -63,7 +74,8 @@ namespace tools_dotnet.Pagination.Services
             object[]? dataForCustomMethods = null,
             bool applyFiltering = true,
             bool applySorting = true,
-            bool applyPagination = true)
+            bool applyPagination = true
+        )
         {
             if (model == null)
             {
@@ -99,7 +111,8 @@ namespace tools_dotnet.Pagination.Services
         private IQueryable<TEntity> ApplyFilters<TEntity>(
             IQueryable<TEntity> query,
             IReadOnlyList<PaginationFilterTerm> filters,
-            object[]? dataForCustomMethods)
+            object[]? dataForCustomMethods
+        )
         {
             if (filters.Count == 0)
             {
@@ -113,9 +126,24 @@ namespace tools_dotnet.Pagination.Services
 
                 foreach (var field in filter.Fields)
                 {
-                    if (!TryBuildMemberExpression(parameterExpression, field, out var memberExpression) || memberExpression == null)
+                    if (
+                        !TryBuildMemberExpression(
+                            parameterExpression,
+                            field,
+                            out var memberExpression
+                        )
+                        || memberExpression == null
+                    )
                     {
-                        if (TryApplyCustomFilterMethod(query, field, filter, dataForCustomMethods, out var customMethodQuery))
+                        if (
+                            TryApplyCustomFilterMethod(
+                                query,
+                                field,
+                                filter,
+                                dataForCustomMethods,
+                                out var customMethodQuery
+                            )
+                        )
                         {
                             query = customMethodQuery;
                         }
@@ -135,7 +163,8 @@ namespace tools_dotnet.Pagination.Services
                         memberExpression,
                         filter,
                         typedValues,
-                        dataForCustomMethods);
+                        dataForCustomMethods
+                    );
 
                     var memberFilterExpression = BuildFilterExpression(context);
 
@@ -144,14 +173,18 @@ namespace tools_dotnet.Pagination.Services
                         continue;
                     }
 
-                    filterExpression = filterExpression == null
-                        ? memberFilterExpression
-                        : Expression.OrElse(filterExpression, memberFilterExpression);
+                    filterExpression =
+                        filterExpression == null
+                            ? memberFilterExpression
+                            : Expression.OrElse(filterExpression, memberFilterExpression);
                 }
 
                 if (filterExpression != null)
                 {
-                    var lambda = Expression.Lambda<Func<TEntity, bool>>(filterExpression, parameterExpression);
+                    var lambda = Expression.Lambda<Func<TEntity, bool>>(
+                        filterExpression,
+                        parameterExpression
+                    );
                     query = query.Where(lambda);
                 }
             }
@@ -164,7 +197,8 @@ namespace tools_dotnet.Pagination.Services
             string field,
             PaginationFilterTerm filterTerm,
             object[]? dataForCustomMethods,
-            out IQueryable<TEntity> filteredQuery)
+            out IQueryable<TEntity> filteredQuery
+        )
         {
             filteredQuery = query;
 
@@ -175,7 +209,16 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var customFilterMethods in _customFilterMethods)
             {
-                if (TryInvokeCustomFilterMethod(query, customFilterMethods, field, filterTerm, dataForCustomMethods, out filteredQuery))
+                if (
+                    TryInvokeCustomFilterMethod(
+                        query,
+                        customFilterMethods,
+                        field,
+                        filterTerm,
+                        dataForCustomMethods,
+                        out filteredQuery
+                    )
+                )
                 {
                     return true;
                 }
@@ -190,7 +233,8 @@ namespace tools_dotnet.Pagination.Services
             string methodName,
             PaginationFilterTerm filterTerm,
             object[]? dataForCustomMethods,
-            out IQueryable<TEntity> filteredQuery)
+            out IQueryable<TEntity> filteredQuery
+        )
         {
             filteredQuery = query;
 
@@ -201,7 +245,10 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var method in methods)
             {
-                if (!TryCloseCustomMethod<TEntity>(method, out var closedMethod) || closedMethod == null)
+                if (
+                    !TryCloseCustomMethod<TEntity>(method, out var closedMethod)
+                    || closedMethod == null
+                )
                 {
                     continue;
                 }
@@ -223,7 +270,10 @@ namespace tools_dotnet.Pagination.Services
                     continue;
                 }
 
-                if (parameters.Length >= 3 && !IsSupportedValuesParameter(parameters[2].ParameterType))
+                if (
+                    parameters.Length >= 3
+                    && !IsSupportedValuesParameter(parameters[2].ParameterType)
+                )
                 {
                     continue;
                 }
@@ -268,7 +318,10 @@ namespace tools_dotnet.Pagination.Services
             return false;
         }
 
-        private static bool TryCloseCustomMethod<TEntity>(MethodInfo method, out MethodInfo? closedMethod)
+        private static bool TryCloseCustomMethod<TEntity>(
+            MethodInfo method,
+            out MethodInfo? closedMethod
+        )
         {
             if (!method.IsGenericMethodDefinition)
             {
@@ -298,12 +351,15 @@ namespace tools_dotnet.Pagination.Services
 
         private static bool IsSupportedValuesParameter(Type valuesParameterType)
         {
-            return valuesParameterType == typeof(string[]) ||
-                   valuesParameterType == typeof(IReadOnlyList<string>) ||
-                   valuesParameterType == typeof(IEnumerable<string>);
+            return valuesParameterType == typeof(string[])
+                || valuesParameterType == typeof(IReadOnlyList<string>)
+                || valuesParameterType == typeof(IEnumerable<string>);
         }
 
-        private static object CreateValuesArgument(Type valuesParameterType, IReadOnlyList<string> values)
+        private static object CreateValuesArgument(
+            Type valuesParameterType,
+            IReadOnlyList<string> values
+        )
         {
             if (valuesParameterType == typeof(string[]))
             {
@@ -317,7 +373,10 @@ namespace tools_dotnet.Pagination.Services
         {
             foreach (var expressionProvider in _filterExpressionProviders)
             {
-                if (expressionProvider.TryBuildExpression(context, out var expression) && expression != null)
+                if (
+                    expressionProvider.TryBuildExpression(context, out var expression)
+                    && expression != null
+                )
                 {
                     return expression;
                 }
@@ -329,7 +388,8 @@ namespace tools_dotnet.Pagination.Services
         private IQueryable<TEntity> ApplySorts<TEntity>(
             IQueryable<TEntity> query,
             IReadOnlyList<PaginationSortTerm> sorts,
-            object[]? dataForCustomMethods)
+            object[]? dataForCustomMethods
+        )
         {
             if (sorts.Count == 0)
             {
@@ -344,15 +404,26 @@ namespace tools_dotnet.Pagination.Services
                 var sourceForSort = orderedQuery ?? currentQuery;
                 var parameterExpression = Expression.Parameter(typeof(TEntity), "entity");
 
-                if (!TryBuildMemberExpression(parameterExpression, sort.Field, out var memberExpression, applyFilterRules: false) || memberExpression == null)
-                {
-                    if (TryApplyCustomSortMethod(
-                        sourceForSort,
+                if (
+                    !TryBuildMemberExpression(
+                        parameterExpression,
                         sort.Field,
-                        orderedQuery != null,
-                        sort.Descending,
-                        dataForCustomMethods,
-                        out var customSortedQuery))
+                        out var memberExpression,
+                        applyFilterRules: false
+                    )
+                    || memberExpression == null
+                )
+                {
+                    if (
+                        TryApplyCustomSortMethod(
+                            sourceForSort,
+                            sort.Field,
+                            orderedQuery != null,
+                            sort.Descending,
+                            dataForCustomMethods,
+                            out var customSortedQuery
+                        )
+                    )
                     {
                         currentQuery = customSortedQuery;
                         orderedQuery = customSortedQuery as IOrderedQueryable<TEntity>;
@@ -365,19 +436,25 @@ namespace tools_dotnet.Pagination.Services
 
                 if (orderedQuery == null)
                 {
-                    orderedQuery = (IOrderedQueryable<TEntity>)InvokeOrderMethod(
-                        sort.Descending ? OrderByDescendingMethod : OrderByMethod,
-                        typeof(TEntity),
-                        sourceForSort,
-                        keySelector);
+                    orderedQuery =
+                        (IOrderedQueryable<TEntity>)
+                            InvokeOrderMethod(
+                                sort.Descending ? OrderByDescendingMethod : OrderByMethod,
+                                typeof(TEntity),
+                                sourceForSort,
+                                keySelector
+                            );
                 }
                 else
                 {
-                    orderedQuery = (IOrderedQueryable<TEntity>)InvokeOrderMethod(
-                        sort.Descending ? ThenByDescendingMethod : ThenByMethod,
-                        typeof(TEntity),
-                        sourceForSort,
-                        keySelector);
+                    orderedQuery =
+                        (IOrderedQueryable<TEntity>)
+                            InvokeOrderMethod(
+                                sort.Descending ? ThenByDescendingMethod : ThenByMethod,
+                                typeof(TEntity),
+                                sourceForSort,
+                                keySelector
+                            );
                 }
 
                 currentQuery = orderedQuery;
@@ -392,7 +469,8 @@ namespace tools_dotnet.Pagination.Services
             bool useThenBy,
             bool descending,
             object[]? dataForCustomMethods,
-            out IQueryable<TEntity> sortedQuery)
+            out IQueryable<TEntity> sortedQuery
+        )
         {
             sortedQuery = query;
 
@@ -403,14 +481,17 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var customSortMethods in _customSortMethods)
             {
-                if (TryInvokeCustomSortMethod(
-                    query,
-                    customSortMethods,
-                    field,
-                    useThenBy,
-                    descending,
-                    dataForCustomMethods,
-                    out sortedQuery))
+                if (
+                    TryInvokeCustomSortMethod(
+                        query,
+                        customSortMethods,
+                        field,
+                        useThenBy,
+                        descending,
+                        dataForCustomMethods,
+                        out sortedQuery
+                    )
+                )
                 {
                     return true;
                 }
@@ -426,7 +507,8 @@ namespace tools_dotnet.Pagination.Services
             bool useThenBy,
             bool descending,
             object[]? dataForCustomMethods,
-            out IQueryable<TEntity> sortedQuery)
+            out IQueryable<TEntity> sortedQuery
+        )
         {
             sortedQuery = query;
 
@@ -437,7 +519,10 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var method in methods)
             {
-                if (!TryCloseCustomMethod<TEntity>(method, out var closedMethod) || closedMethod == null)
+                if (
+                    !TryCloseCustomMethod<TEntity>(method, out var closedMethod)
+                    || closedMethod == null
+                )
                 {
                     continue;
                 }
@@ -504,13 +589,20 @@ namespace tools_dotnet.Pagination.Services
             return false;
         }
 
-        private static IQueryable<TEntity> ApplyPagination<TEntity>(IQueryable<TEntity> query, int page, int pageSize)
+        private static IQueryable<TEntity> ApplyPagination<TEntity>(
+            IQueryable<TEntity> query,
+            int page,
+            int pageSize
+        )
         {
             var skip = (page - 1) * pageSize;
             return query.Skip(skip).Take(pageSize);
         }
 
-        private static IReadOnlyList<object?> ConvertValues(IReadOnlyList<string> rawValues, Type targetType)
+        private static IReadOnlyList<object?> ConvertValues(
+            IReadOnlyList<string> rawValues,
+            Type targetType
+        )
         {
             var values = new List<object?>();
 
@@ -525,7 +617,11 @@ namespace tools_dotnet.Pagination.Services
             return values;
         }
 
-        private static bool TryConvertValue(string rawValue, Type targetType, out object? convertedValue)
+        private static bool TryConvertValue(
+            string rawValue,
+            Type targetType,
+            out object? convertedValue
+        )
         {
             var nullableType = Nullable.GetUnderlyingType(targetType);
             var conversionType = nullableType ?? targetType;
@@ -566,14 +662,24 @@ namespace tools_dotnet.Pagination.Services
 
             if (conversionType == typeof(DateTimeOffset))
             {
-                var parsed = DateTimeOffset.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dateTimeOffsetValue);
+                var parsed = DateTimeOffset.TryParse(
+                    rawValue,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var dateTimeOffsetValue
+                );
                 convertedValue = parsed ? dateTimeOffsetValue : null;
                 return parsed;
             }
 
             if (conversionType == typeof(DateTime))
             {
-                var parsed = DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dateTimeValue);
+                var parsed = DateTime.TryParse(
+                    rawValue,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var dateTimeValue
+                );
                 convertedValue = parsed ? dateTimeValue : null;
                 return parsed;
             }
@@ -601,7 +707,11 @@ namespace tools_dotnet.Pagination.Services
 
             try
             {
-                convertedValue = Convert.ChangeType(rawValue, conversionType, CultureInfo.InvariantCulture);
+                convertedValue = Convert.ChangeType(
+                    rawValue,
+                    conversionType,
+                    CultureInfo.InvariantCulture
+                );
                 return true;
             }
             catch (InvalidCastException)
@@ -615,12 +725,8 @@ namespace tools_dotnet.Pagination.Services
                         convertedValue = converter.ConvertFromInvariantString(rawValue);
                         return true;
                     }
-                    catch (FormatException)
-                    {
-                    }
-                    catch (NotSupportedException)
-                    {
-                    }
+                    catch (FormatException) { }
+                    catch (NotSupportedException) { }
                 }
 
                 convertedValue = null;
@@ -642,12 +748,15 @@ namespace tools_dotnet.Pagination.Services
             Expression source,
             string fieldPath,
             out Expression? memberExpression,
-            bool applyFilterRules = true)
+            bool applyFilterRules = true
+        )
         {
             memberExpression = source;
 
-            var fieldSegments = fieldPath
-                .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var fieldSegments = fieldPath.Split(
+                '.',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            );
 
             if (fieldSegments.Length == 0)
             {
@@ -659,9 +768,11 @@ namespace tools_dotnet.Pagination.Services
             {
                 var segment = fieldSegments[i];
                 var isLeafSegment = i == fieldSegments.Length - 1;
-                var property = memberExpression.Type
-                    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
+                var property = memberExpression
+                    .Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(x =>
+                        MatchesSegment(x, segment, applyFilterRules, isLeafSegment)
+                    );
 
                 if (property != null)
                 {
@@ -669,9 +780,11 @@ namespace tools_dotnet.Pagination.Services
                     continue;
                 }
 
-                var field = memberExpression.Type
-                    .GetFields(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
+                var field = memberExpression
+                    .Type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(x =>
+                        MatchesSegment(x, segment, applyFilterRules, isLeafSegment)
+                    );
 
                 if (field != null)
                 {
@@ -686,13 +799,23 @@ namespace tools_dotnet.Pagination.Services
             return true;
         }
 
-        private static bool MatchesSegment(MemberInfo memberInfo, string segment, bool applyFilterRules, bool isLeafSegment)
+        private static bool MatchesSegment(
+            MemberInfo memberInfo,
+            string segment,
+            bool applyFilterRules,
+            bool isLeafSegment
+        )
         {
             var attribute = memberInfo.GetCustomAttribute<PaginationAttribute>();
-            var memberNameMatches = string.Equals(memberInfo.Name, segment, StringComparison.OrdinalIgnoreCase);
-            var attributeNameMatches = attribute != null &&
-                                       !string.IsNullOrWhiteSpace(attribute.Name) &&
-                                       string.Equals(attribute.Name, segment, StringComparison.OrdinalIgnoreCase);
+            var memberNameMatches = string.Equals(
+                memberInfo.Name,
+                segment,
+                StringComparison.OrdinalIgnoreCase
+            );
+            var attributeNameMatches =
+                attribute != null
+                && !string.IsNullOrWhiteSpace(attribute.Name)
+                && string.Equals(attribute.Name, segment, StringComparison.OrdinalIgnoreCase);
 
             if (!memberNameMatches && !attributeNameMatches)
             {
@@ -709,10 +832,17 @@ namespace tools_dotnet.Pagination.Services
                 return applyFilterRules ? attribute.CanFilter : attribute.CanSort;
             }
 
-            return applyFilterRules ? attribute.CanFilterSubProperties : attribute.CanSortSubProperties;
+            return applyFilterRules
+                ? attribute.CanFilterSubProperties
+                : attribute.CanSortSubProperties;
         }
 
-        private static object InvokeOrderMethod(MethodInfo orderMethod, Type entityType, object source, LambdaExpression keySelector)
+        private static object InvokeOrderMethod(
+            MethodInfo orderMethod,
+            Type entityType,
+            object source,
+            LambdaExpression keySelector
+        )
         {
             var closedMethod = orderMethod.MakeGenericMethod(entityType, keySelector.ReturnType);
             return closedMethod.Invoke(null, [source, keySelector])!;
@@ -723,9 +853,10 @@ namespace tools_dotnet.Pagination.Services
             return typeof(Queryable)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Single(method =>
-                    method.Name == methodName &&
-                    method.IsGenericMethodDefinition &&
-                    method.GetParameters().Length == 2);
+                    method.Name == methodName
+                    && method.IsGenericMethodDefinition
+                    && method.GetParameters().Length == 2
+                );
         }
     }
 }

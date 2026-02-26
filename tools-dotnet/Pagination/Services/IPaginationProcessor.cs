@@ -1,5 +1,5 @@
-using tools_dotnet.Pagination.Models;
 using System.Linq;
+using tools_dotnet.Pagination.Models;
 
 namespace tools_dotnet.Pagination.Services
 {
@@ -25,6 +25,7 @@ namespace tools_dotnet.Pagination.Services
             object[]? dataForCustomMethods = null,
             bool applyFiltering = true,
             bool applySorting = true,
-            bool applyPagination = true);
+            bool applyPagination = true
+        );
     }
 }

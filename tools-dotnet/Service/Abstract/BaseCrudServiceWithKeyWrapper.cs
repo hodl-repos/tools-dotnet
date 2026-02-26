@@ -1,8 +1,8 @@
-using AutoMapper;
-using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AutoMapper;
+using FluentValidation;
 using tools_dotnet.Dao.Crud;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dao.KeyWrapper;
@@ -11,13 +11,18 @@ using tools_dotnet.Paging;
 
 namespace tools_dotnet.Service.Abstract
 {
-    public abstract class BaseCrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto, TRepo, TValidator> : ICrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto>
+    public abstract class BaseCrudServiceWithKeyWrapper<
+        TEntity,
+        TKeyWrapper,
+        TDto,
+        TRepo,
+        TValidator
+    > : ICrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto>
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class, IDto
         where TRepo : ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
         where TValidator : IValidator<TDto>
-
     {
         protected readonly IMapper _mapper;
         protected readonly TRepo _baseRepo;
@@ -26,7 +31,8 @@ namespace tools_dotnet.Service.Abstract
         protected BaseCrudServiceWithKeyWrapper(
             IMapper mapper,
             TRepo baseRepo,
-            TValidator validator)
+            TValidator validator
+        )
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _baseRepo = baseRepo ?? throw new ArgumentNullException(nameof(baseRepo));
@@ -53,9 +59,15 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetAllDtoAsync(keyWrapper.GetContainingResourceFilter());
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination, TKeyWrapper keyWrapper)
+        public virtual async Task<IPagedList<TDto>> GetAllAsync(
+            IApiPagination apiPagination,
+            TKeyWrapper keyWrapper
+        )
         {
-            return await _baseRepo.GetAllDtoAsync(apiPagination, keyWrapper.GetContainingResourceFilter());
+            return await _baseRepo.GetAllDtoAsync(
+                apiPagination,
+                keyWrapper.GetContainingResourceFilter()
+            );
         }
 
         public virtual async Task<TDto> GetByIdAsync(TKeyWrapper keyWrapper)

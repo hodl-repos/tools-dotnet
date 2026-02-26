@@ -18,6 +18,6 @@ namespace tools_dotnet.Pagination.Services
         /// <summary>
         /// Does not normalize values and relies on database collation/type behavior.
         /// </summary>
-        None = 2
+        None = 2,
     }
 }

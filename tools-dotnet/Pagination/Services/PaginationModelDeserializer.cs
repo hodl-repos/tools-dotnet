@@ -1,8 +1,8 @@
-using tools_dotnet.Pagination.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using tools_dotnet.Pagination.Models;
 
 namespace tools_dotnet.Pagination.Services
 {
@@ -27,7 +27,7 @@ namespace tools_dotnet.Pagination.Services
             '=',
             '>',
             '<',
-            '*'
+            '*',
         };
 
         /// <inheritdoc />
@@ -83,7 +83,10 @@ namespace tools_dotnet.Pagination.Services
                     continue;
                 }
 
-                if (!PaginationOperator.TryFromToken(operatorToken, out var @operator) || @operator == null)
+                if (
+                    !PaginationOperator.TryFromToken(operatorToken, out var @operator)
+                    || @operator == null
+                )
                 {
                     continue;
                 }
@@ -157,7 +160,11 @@ namespace tools_dotnet.Pagination.Services
             return pageSize.Value;
         }
 
-        private static bool TryFindOperator(string term, out string? operatorToken, out int operatorIndex)
+        private static bool TryFindOperator(
+            string term,
+            out string? operatorToken,
+            out int operatorIndex
+        )
         {
             operatorToken = null;
             operatorIndex = -1;
@@ -171,7 +178,11 @@ namespace tools_dotnet.Pagination.Services
                     continue;
                 }
 
-                if (operatorIndex == -1 || index < operatorIndex || (index == operatorIndex && token.Length > operatorToken!.Length))
+                if (
+                    operatorIndex == -1
+                    || index < operatorIndex
+                    || (index == operatorIndex && token.Length > operatorToken!.Length)
+                )
                 {
                     operatorIndex = index;
                     operatorToken = token;

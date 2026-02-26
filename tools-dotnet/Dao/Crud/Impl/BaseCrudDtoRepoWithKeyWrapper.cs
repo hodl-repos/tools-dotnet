@@ -1,33 +1,35 @@
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dao.KeyWrapper;
 using tools_dotnet.Exceptions;
+using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
 using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
-    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto> :
-        BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
-        ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
+    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
+        : BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
+            ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
         where TInputDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
-            : base(dbContext, mapper, paginationProcessor)
-        {
-        }
+        protected BaseCrudDtoRepoWithKeyWrapper(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
 
         public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item)
         {
@@ -44,7 +46,9 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync();
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter
+        )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filter)
@@ -57,16 +61,27 @@ namespace tools_dotnet.Dao.Crud.Impl
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter
+        )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filter)
                 .AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper
+            );
         }
 
         public virtual async Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper)
@@ -113,14 +128,17 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
-    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto> : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>
+    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
+        : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>
         where TEntity : class, IEntity
-
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor) : base(dbContext, mapper, paginationProcessor)
-        {
-        }
+        protected BaseCrudDtoRepoWithKeyWrapper(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
     }
 }

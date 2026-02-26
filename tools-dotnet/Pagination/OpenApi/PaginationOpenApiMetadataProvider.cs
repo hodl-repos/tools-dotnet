@@ -1,11 +1,11 @@
-using tools_dotnet.Pagination.Attributes;
-using tools_dotnet.Pagination.Models;
-using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using tools_dotnet.Pagination.Attributes;
+using tools_dotnet.Pagination.Models;
+using tools_dotnet.Pagination.Services;
 
 namespace tools_dotnet.Pagination.OpenApi
 {
@@ -14,37 +14,40 @@ namespace tools_dotnet.Pagination.OpenApi
         private const int MaxNestedDepth = 8;
 
         private static readonly IReadOnlyList<PaginationOperator> EqualityOperators =
-            [PaginationOperator.Equal, PaginationOperator.NotEquals];
+        [
+            PaginationOperator.Equal,
+            PaginationOperator.NotEquals,
+        ];
 
         private static readonly IReadOnlyList<PaginationOperator> ComparableOperators =
-            [
-                PaginationOperator.Equal,
-                PaginationOperator.NotEquals,
-                PaginationOperator.GreaterThan,
-                PaginationOperator.GreaterThanOrEqual,
-                PaginationOperator.LessThan,
-                PaginationOperator.LessThanOrEqual
-            ];
+        [
+            PaginationOperator.Equal,
+            PaginationOperator.NotEquals,
+            PaginationOperator.GreaterThan,
+            PaginationOperator.GreaterThanOrEqual,
+            PaginationOperator.LessThan,
+            PaginationOperator.LessThanOrEqual,
+        ];
 
         private static readonly IReadOnlyList<PaginationOperator> StringOperators =
-            [
-                PaginationOperator.Equal,
-                PaginationOperator.EqualCaseInsensitive,
-                PaginationOperator.NotEquals,
-                PaginationOperator.NotEqualsCaseInsensitive,
-                PaginationOperator.Contains,
-                PaginationOperator.ContainsCaseInsensitive,
-                PaginationOperator.NotContains,
-                PaginationOperator.NotContainsCaseInsensitive,
-                PaginationOperator.StartsWith,
-                PaginationOperator.StartsWithCaseInsensitive,
-                PaginationOperator.NotStartsWith,
-                PaginationOperator.NotStartsWithCaseInsensitive,
-                PaginationOperator.EndsWith,
-                PaginationOperator.EndsWithCaseInsensitive,
-                PaginationOperator.NotEndsWith,
-                PaginationOperator.NotEndsWithCaseInsensitive
-            ];
+        [
+            PaginationOperator.Equal,
+            PaginationOperator.EqualCaseInsensitive,
+            PaginationOperator.NotEquals,
+            PaginationOperator.NotEqualsCaseInsensitive,
+            PaginationOperator.Contains,
+            PaginationOperator.ContainsCaseInsensitive,
+            PaginationOperator.NotContains,
+            PaginationOperator.NotContainsCaseInsensitive,
+            PaginationOperator.StartsWith,
+            PaginationOperator.StartsWithCaseInsensitive,
+            PaginationOperator.NotStartsWith,
+            PaginationOperator.NotStartsWithCaseInsensitive,
+            PaginationOperator.EndsWith,
+            PaginationOperator.EndsWithCaseInsensitive,
+            PaginationOperator.NotEndsWith,
+            PaginationOperator.NotEndsWithCaseInsensitive,
+        ];
 
         private static readonly HashSet<Type> TypesWithComparisonOperators = new()
         {
@@ -64,13 +67,14 @@ namespace tools_dotnet.Pagination.OpenApi
             typeof(DateTimeOffset),
             typeof(DateOnly),
             typeof(TimeOnly),
-            typeof(TimeSpan)
+            typeof(TimeSpan),
         };
 
         public static IReadOnlyList<PaginationOpenApiFieldDescriptor> GetFieldDescriptors(
             Type modelType,
             IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
             if (modelType == null)
             {
@@ -80,12 +84,7 @@ namespace tools_dotnet.Pagination.OpenApi
             var result = new List<PaginationOpenApiFieldDescriptor>();
             var activePathTypes = new HashSet<Type>();
 
-            CollectDescriptors(
-                modelType,
-                prefix: null,
-                depth: 0,
-                result,
-                activePathTypes);
+            CollectDescriptors(modelType, prefix: null, depth: 0, result, activePathTypes);
 
             if (customFilterMethods != null)
             {
@@ -131,7 +130,11 @@ namespace tools_dotnet.Pagination.OpenApi
 
             if (TypesWithComparisonOperators.Contains(underlyingType))
             {
-                if (underlyingType == typeof(DateTime) || underlyingType == typeof(DateTimeOffset) || underlyingType == typeof(DateOnly))
+                if (
+                    underlyingType == typeof(DateTime)
+                    || underlyingType == typeof(DateTimeOffset)
+                    || underlyingType == typeof(DateOnly)
+                )
                 {
                     return $"date{suffix}";
                 }
@@ -156,7 +159,11 @@ namespace tools_dotnet.Pagination.OpenApi
                 return StringOperators;
             }
 
-            if (underlyingType == typeof(bool) || underlyingType == typeof(Guid) || underlyingType.IsEnum)
+            if (
+                underlyingType == typeof(bool)
+                || underlyingType == typeof(Guid)
+                || underlyingType.IsEnum
+            )
             {
                 return EqualityOperators;
             }
@@ -174,7 +181,8 @@ namespace tools_dotnet.Pagination.OpenApi
             string? prefix,
             int depth,
             ICollection<PaginationOpenApiFieldDescriptor> result,
-            ISet<Type> activePathTypes)
+            ISet<Type> activePathTypes
+        )
         {
             if (depth > MaxNestedDepth)
             {
@@ -190,7 +198,9 @@ namespace tools_dotnet.Pagination.OpenApi
             {
                 var members = modelType
                     .GetMembers(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(x => x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field);
+                    .Where(x =>
+                        x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field
+                    );
 
                 foreach (var member in members)
                 {
@@ -205,7 +215,7 @@ namespace tools_dotnet.Pagination.OpenApi
                     {
                         PropertyInfo propertyInfo => propertyInfo.PropertyType,
                         FieldInfo fieldInfo => fieldInfo.FieldType,
-                        _ => null
+                        _ => null,
                     };
 
                     if (memberType == null)
@@ -213,16 +223,25 @@ namespace tools_dotnet.Pagination.OpenApi
                         continue;
                     }
 
-                    var memberName = string.IsNullOrWhiteSpace(attribute.Name) ? member.Name : attribute.Name!;
-                    var fieldPath = string.IsNullOrWhiteSpace(prefix) ? memberName : $"{prefix}.{memberName}";
-                    var operators = attribute.CanFilter ? ResolveFilterOperators(memberType) : Array.Empty<PaginationOperator>();
+                    var memberName = string.IsNullOrWhiteSpace(attribute.Name)
+                        ? member.Name
+                        : attribute.Name!;
+                    var fieldPath = string.IsNullOrWhiteSpace(prefix)
+                        ? memberName
+                        : $"{prefix}.{memberName}";
+                    var operators = attribute.CanFilter
+                        ? ResolveFilterOperators(memberType)
+                        : Array.Empty<PaginationOperator>();
 
-                    result.Add(new PaginationOpenApiFieldDescriptor(
-                        fieldPath,
-                        memberType,
-                        attribute.CanFilter,
-                        attribute.CanSort,
-                        operators));
+                    result.Add(
+                        new PaginationOpenApiFieldDescriptor(
+                            fieldPath,
+                            memberType,
+                            attribute.CanFilter,
+                            attribute.CanSort,
+                            operators
+                        )
+                    );
 
                     if (!attribute.CanFilterSubProperties && !attribute.CanSortSubProperties)
                     {
@@ -236,12 +255,7 @@ namespace tools_dotnet.Pagination.OpenApi
 
                     var nestedType = Nullable.GetUnderlyingType(memberType) ?? memberType;
 
-                    CollectDescriptors(
-                        nestedType,
-                        fieldPath,
-                        depth + 1,
-                        result,
-                        activePathTypes);
+                    CollectDescriptors(nestedType, fieldPath, depth + 1, result, activePathTypes);
                 }
             }
             finally
@@ -253,16 +267,22 @@ namespace tools_dotnet.Pagination.OpenApi
         private static void CollectCustomFilterMethodDescriptors(
             Type modelType,
             IEnumerable<IPaginationCustomFilterMethods> customFilterMethods,
-            ICollection<PaginationOpenApiFieldDescriptor> result)
+            ICollection<PaginationOpenApiFieldDescriptor> result
+        )
         {
             foreach (var methodsContainer in customFilterMethods)
             {
-                foreach (var method in methodsContainer
-                    .GetType()
-                    .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                    .Where(x => !x.IsSpecialName && x.DeclaringType != typeof(object)))
+                foreach (
+                    var method in methodsContainer
+                        .GetType()
+                        .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                        .Where(x => !x.IsSpecialName && x.DeclaringType != typeof(object))
+                )
                 {
-                    if (!TryCloseCustomMethod(method, modelType, out var closedMethod) || closedMethod == null)
+                    if (
+                        !TryCloseCustomMethod(method, modelType, out var closedMethod)
+                        || closedMethod == null
+                    )
                     {
                         continue;
                     }
@@ -272,13 +292,16 @@ namespace tools_dotnet.Pagination.OpenApi
                         continue;
                     }
 
-                    result.Add(new PaginationOpenApiFieldDescriptor(
-                        method.Name,
-                        typeof(string),
-                        canFilter: true,
-                        canSort: false,
-                        operators: Array.Empty<PaginationOperator>(),
-                        filterTypeDisplayNameOverride: "custom"));
+                    result.Add(
+                        new PaginationOpenApiFieldDescriptor(
+                            method.Name,
+                            typeof(string),
+                            canFilter: true,
+                            canSort: false,
+                            operators: Array.Empty<PaginationOperator>(),
+                            filterTypeDisplayNameOverride: "custom"
+                        )
+                    );
                 }
             }
         }
@@ -286,16 +309,22 @@ namespace tools_dotnet.Pagination.OpenApi
         private static void CollectCustomSortMethodDescriptors(
             Type modelType,
             IEnumerable<IPaginationCustomSortsMethods> customSortMethods,
-            ICollection<PaginationOpenApiFieldDescriptor> result)
+            ICollection<PaginationOpenApiFieldDescriptor> result
+        )
         {
             foreach (var methodsContainer in customSortMethods)
             {
-                foreach (var method in methodsContainer
-                    .GetType()
-                    .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                    .Where(x => !x.IsSpecialName && x.DeclaringType != typeof(object)))
+                foreach (
+                    var method in methodsContainer
+                        .GetType()
+                        .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                        .Where(x => !x.IsSpecialName && x.DeclaringType != typeof(object))
+                )
                 {
-                    if (!TryCloseCustomMethod(method, modelType, out var closedMethod) || closedMethod == null)
+                    if (
+                        !TryCloseCustomMethod(method, modelType, out var closedMethod)
+                        || closedMethod == null
+                    )
                     {
                         continue;
                     }
@@ -305,17 +334,24 @@ namespace tools_dotnet.Pagination.OpenApi
                         continue;
                     }
 
-                    result.Add(new PaginationOpenApiFieldDescriptor(
-                        method.Name,
-                        typeof(string),
-                        canFilter: false,
-                        canSort: true,
-                        operators: Array.Empty<PaginationOperator>()));
+                    result.Add(
+                        new PaginationOpenApiFieldDescriptor(
+                            method.Name,
+                            typeof(string),
+                            canFilter: false,
+                            canSort: true,
+                            operators: Array.Empty<PaginationOperator>()
+                        )
+                    );
                 }
             }
         }
 
-        private static bool TryCloseCustomMethod(MethodInfo method, Type modelType, out MethodInfo? closedMethod)
+        private static bool TryCloseCustomMethod(
+            MethodInfo method,
+            Type modelType,
+            out MethodInfo? closedMethod
+        )
         {
             if (!method.IsGenericMethodDefinition)
             {
@@ -363,10 +399,12 @@ namespace tools_dotnet.Pagination.OpenApi
                 return false;
             }
 
-            if (parameters.Length >= 3 &&
-                parameters[2].ParameterType != typeof(string[]) &&
-                parameters[2].ParameterType != typeof(IReadOnlyList<string>) &&
-                parameters[2].ParameterType != typeof(IEnumerable<string>))
+            if (
+                parameters.Length >= 3
+                && parameters[2].ParameterType != typeof(string[])
+                && parameters[2].ParameterType != typeof(IReadOnlyList<string>)
+                && parameters[2].ParameterType != typeof(IEnumerable<string>)
+            )
             {
                 return false;
             }
@@ -376,7 +414,9 @@ namespace tools_dotnet.Pagination.OpenApi
                 return false;
             }
 
-            return typeof(IQueryable<>).MakeGenericType(modelType).IsAssignableFrom(method.ReturnType);
+            return typeof(IQueryable<>)
+                .MakeGenericType(modelType)
+                .IsAssignableFrom(method.ReturnType);
         }
 
         private static bool IsValidCustomSortMethodSignature(MethodInfo method, Type modelType)
@@ -409,28 +449,35 @@ namespace tools_dotnet.Pagination.OpenApi
                 return false;
             }
 
-            return typeof(IQueryable<>).MakeGenericType(modelType).IsAssignableFrom(method.ReturnType);
+            return typeof(IQueryable<>)
+                .MakeGenericType(modelType)
+                .IsAssignableFrom(method.ReturnType);
         }
 
         private static bool CanTraverseNestedMembers(Type memberType)
         {
             var underlyingType = Nullable.GetUnderlyingType(memberType) ?? memberType;
 
-            if (underlyingType == typeof(string) ||
-                underlyingType == typeof(Guid) ||
-                underlyingType == typeof(decimal) ||
-                underlyingType == typeof(DateTime) ||
-                underlyingType == typeof(DateTimeOffset) ||
-                underlyingType == typeof(DateOnly) ||
-                underlyingType == typeof(TimeOnly) ||
-                underlyingType == typeof(TimeSpan) ||
-                underlyingType.IsEnum ||
-                underlyingType.IsPrimitive)
+            if (
+                underlyingType == typeof(string)
+                || underlyingType == typeof(Guid)
+                || underlyingType == typeof(decimal)
+                || underlyingType == typeof(DateTime)
+                || underlyingType == typeof(DateTimeOffset)
+                || underlyingType == typeof(DateOnly)
+                || underlyingType == typeof(TimeOnly)
+                || underlyingType == typeof(TimeSpan)
+                || underlyingType.IsEnum
+                || underlyingType.IsPrimitive
+            )
             {
                 return false;
             }
 
-            if (underlyingType != typeof(byte[]) && typeof(IEnumerable).IsAssignableFrom(underlyingType))
+            if (
+                underlyingType != typeof(byte[])
+                && typeof(IEnumerable).IsAssignableFrom(underlyingType)
+            )
             {
                 return false;
             }

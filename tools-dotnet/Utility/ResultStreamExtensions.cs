@@ -1,18 +1,26 @@
-using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>
+    /// Provides extension methods for streaming results as ndjson to HTTP responses.
+    /// </summary>
     public static class ResultStreamExtensions
     {
         /// <summary>
         /// wraps items one-by-one in ndjson, returns everything needed to http-reponse
         /// </summary>
-        public static async Task StreamResultAsync<T>(HttpContext httpContext, HttpResponse response, IAsyncEnumerable<T> enumerable, JsonSerializerOptions? options = null)
+        public static async Task StreamResultAsync<T>(
+            this HttpContext httpContext,
+            HttpResponse response,
+            IAsyncEnumerable<T> enumerable,
+            JsonSerializerOptions? options = null
+        )
         {
             if (options == null)
             {

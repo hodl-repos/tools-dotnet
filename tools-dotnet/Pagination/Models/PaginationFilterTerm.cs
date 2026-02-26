@@ -15,7 +15,11 @@ namespace tools_dotnet.Pagination.Models
         /// <param name="fields">Fields included in this term. Multiple fields are OR-ed.</param>
         /// <param name="operator">Operator for the comparison.</param>
         /// <param name="values">Values included in this term. Multiple values are OR-ed for positive operators.</param>
-        public PaginationFilterTerm(IReadOnlyList<string> fields, PaginationOperator @operator, IReadOnlyList<string> values)
+        public PaginationFilterTerm(
+            IReadOnlyList<string> fields,
+            PaginationOperator @operator,
+            IReadOnlyList<string> values
+        )
         {
             if (fields == null)
             {

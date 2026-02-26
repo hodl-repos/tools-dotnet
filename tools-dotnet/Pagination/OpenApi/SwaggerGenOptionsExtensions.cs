@@ -1,8 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using tools_dotnet.Pagination.Services;
 
 namespace tools_dotnet.Pagination.OpenApi
@@ -22,7 +22,8 @@ namespace tools_dotnet.Pagination.OpenApi
         public static SwaggerGenOptions AddPaginationOpenApiSupport(
             this SwaggerGenOptions options,
             IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
             if (options == null)
             {
@@ -37,8 +38,10 @@ namespace tools_dotnet.Pagination.OpenApi
 
             options.OperationFilter<PaginationOpenApiOperationFilter>(
                 customFilterMethods?.ToArray() ?? Array.Empty<IPaginationCustomFilterMethods>(),
-                customSortMethods?.ToArray() ?? Array.Empty<IPaginationCustomSortsMethods>());
+                customSortMethods?.ToArray() ?? Array.Empty<IPaginationCustomSortsMethods>()
+            );
             return options;
         }
     }
 }
+

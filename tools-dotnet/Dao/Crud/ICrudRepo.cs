@@ -18,7 +18,11 @@ namespace tools_dotnet.Dao.Crud
 
         Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters);
 
-        Task<TEntity?> FindAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true);
+        Task<TEntity?> FindAsync(
+            Expression<Func<TEntity, bool>> filter,
+            bool throwOnMultipleFound = true,
+            bool ignoreDeletedWithAuditable = true
+        );
 
         Task<TEntity> GetByIdAsync(TIdType id);
 

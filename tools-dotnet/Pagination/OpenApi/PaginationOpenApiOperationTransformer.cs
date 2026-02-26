@@ -1,13 +1,13 @@
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
 using tools_dotnet.Pagination.Services;
 
 namespace tools_dotnet.Pagination.OpenApi
@@ -27,10 +27,13 @@ namespace tools_dotnet.Pagination.OpenApi
         /// <param name="customSortMethods">Optional custom sort method containers used for OpenAPI metadata enrichment.</param>
         public PaginationOpenApiOperationTransformer(
             IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
-            _customFilterMethods = customFilterMethods?.ToArray() ?? Array.Empty<IPaginationCustomFilterMethods>();
-            _customSortMethods = customSortMethods?.ToArray() ?? Array.Empty<IPaginationCustomSortsMethods>();
+            _customFilterMethods =
+                customFilterMethods?.ToArray() ?? Array.Empty<IPaginationCustomFilterMethods>();
+            _customSortMethods =
+                customSortMethods?.ToArray() ?? Array.Empty<IPaginationCustomSortsMethods>();
         }
 
         /// <summary>
@@ -42,7 +45,8 @@ namespace tools_dotnet.Pagination.OpenApi
         public Task TransformAsync(
             OpenApiOperation operation,
             OpenApiOperationTransformerContext context,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken
+        )
         {
             var methodInfo = ResolveMethodInfo(context.Description);
 
@@ -51,19 +55,26 @@ namespace tools_dotnet.Pagination.OpenApi
                 methodInfo,
                 context.Description.ActionDescriptor.EndpointMetadata,
                 _customFilterMethods,
-                _customSortMethods);
+                _customSortMethods
+            );
 
             return Task.CompletedTask;
         }
 
         private static MethodInfo? ResolveMethodInfo(ApiDescription apiDescription)
         {
-            if (apiDescription.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor)
+            if (
+                apiDescription.ActionDescriptor
+                is ControllerActionDescriptor controllerActionDescriptor
+            )
             {
                 return controllerActionDescriptor.MethodInfo;
             }
 
-            return apiDescription.ActionDescriptor.EndpointMetadata?.OfType<MethodInfo>().FirstOrDefault();
+            return apiDescription
+                .ActionDescriptor.EndpointMetadata?.OfType<MethodInfo>()
+                .FirstOrDefault();
         }
     }
 }
+

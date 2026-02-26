@@ -19,7 +19,8 @@ namespace tools_dotnet.Pagination.Models
             IReadOnlyList<PaginationFilterTerm> filters,
             IReadOnlyList<PaginationSortTerm> sorts,
             int page,
-            int pageSize)
+            int pageSize
+        )
         {
             if (page < 1)
             {

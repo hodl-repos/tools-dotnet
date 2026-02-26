@@ -11,12 +11,14 @@ namespace tools_dotnet.Exceptions
             OnRemove = onRemove;
         }
 
-        public DependentItemException(string message, bool onRemove) : base(message)
+        public DependentItemException(string message, bool onRemove)
+            : base(message)
         {
             OnRemove = onRemove;
         }
 
-        public DependentItemException(string message, bool onRemove, Exception innerException) : base(message, innerException)
+        public DependentItemException(string message, bool onRemove, Exception innerException)
+            : base(message, innerException)
         {
             OnRemove = onRemove;
         }

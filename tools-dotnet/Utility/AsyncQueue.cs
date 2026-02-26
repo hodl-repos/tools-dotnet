@@ -12,8 +12,17 @@ namespace tools_dotnet.Utility
     /// </summary>
     public interface IAsyncQueue<T> : IAsyncEnumerable<T>
     {
+        /// <summary>
+        /// Enqueues an item to be processed.
+        /// </summary>
+        /// <param name="item">The item to enqueue.</param>
         void Enqueue(T item);
 
+        /// <summary>
+        /// Gets all items in the queue asynchronously.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>An async enumerable of all queued items.</returns>
         Task<IAsyncEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
     }
 
@@ -23,9 +32,13 @@ namespace tools_dotnet.Utility
         private readonly SemaphoreSlim _enumerationSemaphore = new SemaphoreSlim(1);
         private readonly BufferBlock<T> _bufferBlock = new BufferBlock<T>();
 
+        /// <inheritdoc/>
         public void Enqueue(T item) => _bufferBlock.Post(item);
 
-        public async Task<IAsyncEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public async Task<IAsyncEnumerable<T>> GetAllAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             // We lock this so we only ever enumerate once at a time.
             // That way we ensure all items are returned in a continuous
@@ -42,8 +55,10 @@ namespace tools_dotnet.Utility
             }
         }
 
-        public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-
+        /// <inheritdoc/>
+        public async IAsyncEnumerator<T> GetAsyncEnumerator(
+            CancellationToken cancellationToken = default
+        )
         {
             // We lock this so we only ever enumerate once at a time.
             // That way we ensure all items are returned in a continuous

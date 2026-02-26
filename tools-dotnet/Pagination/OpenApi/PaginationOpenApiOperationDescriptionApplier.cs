@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi;
-using tools_dotnet.Paging;
-using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
+using tools_dotnet.Pagination.Services;
+using tools_dotnet.Paging;
 
 namespace tools_dotnet.Pagination.OpenApi
 {
@@ -17,7 +17,8 @@ namespace tools_dotnet.Pagination.OpenApi
             MethodInfo? methodInfo,
             IList<object>? endpointMetadata,
             IReadOnlyList<IPaginationCustomFilterMethods>? customFilterMethods = null,
-            IReadOnlyList<IPaginationCustomSortsMethods>? customSortMethods = null)
+            IReadOnlyList<IPaginationCustomSortsMethods>? customSortMethods = null
+        )
         {
             if (operation == null)
             {
@@ -34,24 +35,36 @@ namespace tools_dotnet.Pagination.OpenApi
             var fieldDescriptors = PaginationOpenApiMetadataProvider.GetFieldDescriptors(
                 modelType,
                 customFilterMethods,
-                customSortMethods);
+                customSortMethods
+            );
 
             if (fieldDescriptors.Count == 0)
             {
                 return;
             }
 
-            var filtersDescription = PaginationOpenApiDescriptionBuilder.BuildFiltersDescription(fieldDescriptors);
-            var sortsDescription = PaginationOpenApiDescriptionBuilder.BuildSortsDescription(fieldDescriptors);
+            var filtersDescription = PaginationOpenApiDescriptionBuilder.BuildFiltersDescription(
+                fieldDescriptors
+            );
+            var sortsDescription = PaginationOpenApiDescriptionBuilder.BuildSortsDescription(
+                fieldDescriptors
+            );
 
             if (operation.Parameters != null)
             {
-                AppendQueryParameterDescription(operation.Parameters, "filters", filtersDescription);
+                AppendQueryParameterDescription(
+                    operation.Parameters,
+                    "filters",
+                    filtersDescription
+                );
                 AppendQueryParameterDescription(operation.Parameters, "sorts", sortsDescription);
             }
         }
 
-        private static Type? ResolveModelType(MethodInfo? methodInfo, IList<object>? endpointMetadata)
+        private static Type? ResolveModelType(
+            MethodInfo? methodInfo,
+            IList<object>? endpointMetadata
+        )
         {
             var explicitType = ResolveModelTypeFromAttribute(methodInfo, endpointMetadata);
 
@@ -63,23 +76,33 @@ namespace tools_dotnet.Pagination.OpenApi
             return ResolveModelTypeFromReturnType(methodInfo?.ReturnType);
         }
 
-        private static Type? ResolveModelTypeFromAttribute(MethodInfo? methodInfo, IList<object>? endpointMetadata)
+        private static Type? ResolveModelTypeFromAttribute(
+            MethodInfo? methodInfo,
+            IList<object>? endpointMetadata
+        )
         {
-            var methodAttribute = methodInfo?.GetCustomAttribute<PaginationOpenApiTypeAttribute>(inherit: true);
+            var methodAttribute = methodInfo?.GetCustomAttribute<PaginationOpenApiTypeAttribute>(
+                inherit: true
+            );
 
             if (methodAttribute != null)
             {
                 return methodAttribute.ModelType;
             }
 
-            var declaringTypeAttribute = methodInfo?.DeclaringType?.GetCustomAttribute<PaginationOpenApiTypeAttribute>(inherit: true);
+            var declaringTypeAttribute =
+                methodInfo?.DeclaringType?.GetCustomAttribute<PaginationOpenApiTypeAttribute>(
+                    inherit: true
+                );
 
             if (declaringTypeAttribute != null)
             {
                 return declaringTypeAttribute.ModelType;
             }
 
-            var endpointMetadataAttribute = endpointMetadata?.OfType<PaginationOpenApiTypeAttribute>().FirstOrDefault();
+            var endpointMetadataAttribute = endpointMetadata
+                ?.OfType<PaginationOpenApiTypeAttribute>()
+                .FirstOrDefault();
 
             return endpointMetadataAttribute?.ModelType;
         }
@@ -106,7 +129,10 @@ namespace tools_dotnet.Pagination.OpenApi
 
             var genericTypeDefinition = type.GetGenericTypeDefinition();
 
-            if (genericTypeDefinition == typeof(Task<>) || genericTypeDefinition == typeof(ValueTask<>))
+            if (
+                genericTypeDefinition == typeof(Task<>)
+                || genericTypeDefinition == typeof(ValueTask<>)
+            )
             {
                 return type.GetGenericArguments()[0];
             }
@@ -140,7 +166,10 @@ namespace tools_dotnet.Pagination.OpenApi
 
             foreach (var implementedInterface in type.GetInterfaces())
             {
-                if (implementedInterface.IsGenericType && implementedInterface.GetGenericTypeDefinition() == genericTypeDefinition)
+                if (
+                    implementedInterface.IsGenericType
+                    && implementedInterface.GetGenericTypeDefinition() == genericTypeDefinition
+                )
                 {
                     return implementedInterface.GetGenericArguments()[0];
                 }
@@ -149,7 +178,11 @@ namespace tools_dotnet.Pagination.OpenApi
             return null;
         }
 
-        private static void AppendQueryParameterDescription(IList<IOpenApiParameter> parameters, string parameterName, string description)
+        private static void AppendQueryParameterDescription(
+            IList<IOpenApiParameter> parameters,
+            string parameterName,
+            string description
+        )
         {
             if (string.IsNullOrWhiteSpace(description))
             {
@@ -157,8 +190,9 @@ namespace tools_dotnet.Pagination.OpenApi
             }
 
             var parameter = parameters.FirstOrDefault(x =>
-                x.In == ParameterLocation.Query &&
-                string.Equals(x.Name, parameterName, StringComparison.OrdinalIgnoreCase));
+                x.In == ParameterLocation.Query
+                && string.Equals(x.Name, parameterName, StringComparison.OrdinalIgnoreCase)
+            );
 
             if (parameter == null)
             {
@@ -173,8 +207,10 @@ namespace tools_dotnet.Pagination.OpenApi
 
             if (!parameter.Description.Contains(description, StringComparison.Ordinal))
             {
-                parameter.Description = $"{parameter.Description}{Environment.NewLine}{Environment.NewLine}{description}";
+                parameter.Description =
+                    $"{parameter.Description}{Environment.NewLine}{Environment.NewLine}{description}";
             }
         }
     }
 }
+
