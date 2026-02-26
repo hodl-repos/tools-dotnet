@@ -183,6 +183,8 @@ Supported integrations:
 - Swashbuckle (`AddSwaggerGen`)
 - ASP.NET Core OpenAPI (`AddOpenApi`)
 
+Custom method containers (`IPaginationCustomFilterMethods` / `IPaginationCustomSortsMethods`) are included in docs when registered in DI, or passed to `AddPaginationOpenApiSupport(...)`.
+
 ### Swashbuckle / SwaggerGen
 
 ```csharp
@@ -193,6 +195,11 @@ services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
     options.AddPaginationOpenApiSupport();
+
+    // Optional explicit custom method mapping:
+    // options.AddPaginationOpenApiSupport(
+    //     customFilterMethods: new[] { new UserCustomFilters() },
+    //     customSortMethods: new[] { new UserCustomSorts() });
 });
 ```
 
@@ -204,6 +211,11 @@ using tools_dotnet.Pagination.OpenApi;
 services.AddOpenApi("v1", options =>
 {
     options.AddPaginationOpenApiSupport();
+
+    // Optional explicit custom method mapping:
+    // options.AddPaginationOpenApiSupport(
+    //     customFilterMethods: new[] { new UserCustomFilters() },
+    //     customSortMethods: new[] { new UserCustomSorts() });
 });
 ```
 
@@ -338,3 +350,52 @@ var processor = new PaginationProcessor(
 Query example:
 
 - `filters=is_adult==21`
+
+Supported filter signatures:
+
+- `IQueryable<TEntity> Method(IQueryable<TEntity> source)`
+- `IQueryable<TEntity> Method(IQueryable<TEntity> source, string op)`
+- `IQueryable<TEntity> Method(IQueryable<TEntity> source, string op, string[] values)`
+- Same with an extra fourth `object[]?` argument for custom data.
+
+## Custom sort methods (Sieve-style)
+
+When a sort field does not map to an entity member, `PaginationProcessor` can call custom sort methods by name.
+
+Implement `IPaginationCustomSortsMethods` and register the implementation in the processor:
+
+```csharp
+using tools_dotnet.Pagination.Services;
+
+public sealed class UserCustomSorts : IPaginationCustomSortsMethods
+{
+    public IQueryable<UserEntity> popularity(IQueryable<UserEntity> source, bool useThenBy, bool desc)
+    {
+        if (useThenBy)
+        {
+            var ordered = (IOrderedQueryable<UserEntity>)source;
+            return desc
+                ? ordered.ThenByDescending(x => x.LikeCount)
+                : ordered.ThenBy(x => x.LikeCount);
+        }
+
+        return desc
+            ? source.OrderByDescending(x => x.LikeCount)
+            : source.OrderBy(x => x.LikeCount);
+    }
+}
+
+var processor = new PaginationProcessor(
+    customSortMethods: new[] { new UserCustomSorts() });
+```
+
+Query example:
+
+- `sorts=popularity,-created_at`
+
+Supported sort signatures:
+
+- `IQueryable<TEntity> Method(IQueryable<TEntity> source)`
+- `IQueryable<TEntity> Method(IQueryable<TEntity> source, bool useThenBy)`
+- `IQueryable<TEntity> Method(IQueryable<TEntity> source, bool useThenBy, bool desc)`
+- Same with an extra fourth `object[]?` argument for custom data.

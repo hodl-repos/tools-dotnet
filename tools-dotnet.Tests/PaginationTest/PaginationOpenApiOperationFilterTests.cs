@@ -11,6 +11,7 @@ using tools_dotnet.Paging;
 using tools_dotnet.Paging.Impl;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.OpenApi;
+using tools_dotnet.Pagination.Services;
 using Microsoft.OpenApi;
 
 namespace tools_dotnet.Tests.PaginationTest
@@ -87,6 +88,19 @@ namespace tools_dotnet.Tests.PaginationTest
         public int Age { get; set; }
     }
 
+    public sealed class PaginationOpenApiCustomMethods : IPaginationCustomFilterMethods, IPaginationCustomSortsMethods
+    {
+        public IQueryable<PaginationOpenApiFilterModel> is_adult(IQueryable<PaginationOpenApiFilterModel> source, string op, string[] values)
+        {
+            return source;
+        }
+
+        public IQueryable<PaginationOpenApiFilterModel> by_name_length(IQueryable<PaginationOpenApiFilterModel> source, bool useThenBy, bool desc)
+        {
+            return source;
+        }
+    }
+
     [TestFixture]
     public class PaginationOpenApiOperationFilterTests
     {
@@ -148,6 +162,20 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
+        public void Swagger_ShouldDocumentCustomFilterAndSortMethods_WhenRegistered()
+        {
+            var operation = GetSwaggerOperation("/openapi-pagination-tests/inferred", includeCustomMethods: true);
+            var filtersParameter = GetQueryParameter(operation, "filters");
+            var sortsParameter = GetQueryParameter(operation, "sorts");
+
+            filtersParameter.Description.ShouldNotBeNull();
+            filtersParameter.Description.ShouldContain("`is_adult` (custom): custom");
+
+            sortsParameter.Description.ShouldNotBeNull();
+            sortsParameter.Description.ShouldContain("`by_name_length`");
+        }
+
+        [Test]
         public async Task MicrosoftOpenApi_ShouldMatchSwagger_ForInferredFiltersAndSorts()
         {
             var path = "/openapi-pagination-tests/inferred";
@@ -180,7 +208,18 @@ namespace tools_dotnet.Tests.PaginationTest
             AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "sorts");
         }
 
-        private static OpenApiOperation GetSwaggerOperation(string path)
+        [Test]
+        public async Task MicrosoftOpenApi_ShouldMatchSwagger_ForCustomFilterAndSortMethods()
+        {
+            var path = "/openapi-pagination-tests/inferred";
+            var swaggerOperation = GetSwaggerOperation(path, includeCustomMethods: true);
+            var microsoftOperation = await GetMicrosoftOpenApiOperationAsync(path, includeCustomMethods: true);
+
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "filters");
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "sorts");
+        }
+
+        private static OpenApiOperation GetSwaggerOperation(string path, bool includeCustomMethods = false)
         {
             var services = new ServiceCollection();
             services.AddLogging();
@@ -193,6 +232,7 @@ namespace tools_dotnet.Tests.PaginationTest
                 .ApplicationParts
                 .Add(new AssemblyPart(typeof(PaginationOpenApiOperationFilterTests).Assembly));
 
+            RegisterCustomMethods(services, includeCustomMethods);
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(options =>
             {
@@ -206,7 +246,7 @@ namespace tools_dotnet.Tests.PaginationTest
             return document.Paths[path].Operations![HttpMethod.Get];
         }
 
-        private static async Task<OpenApiOperation> GetMicrosoftOpenApiOperationAsync(string path)
+        private static async Task<OpenApiOperation> GetMicrosoftOpenApiOperationAsync(string path, bool includeCustomMethods = false)
         {
             var services = new ServiceCollection();
             services.AddLogging();
@@ -219,6 +259,7 @@ namespace tools_dotnet.Tests.PaginationTest
                 .ApplicationParts
                 .Add(new AssemblyPart(typeof(PaginationOpenApiOperationFilterTests).Assembly));
 
+            RegisterCustomMethods(services, includeCustomMethods);
             services.AddEndpointsApiExplorer();
             services.AddOpenApi("v1", options =>
             {
@@ -229,6 +270,18 @@ namespace tools_dotnet.Tests.PaginationTest
             var openApiDocumentProvider = serviceProvider.GetRequiredKeyedService<IOpenApiDocumentProvider>("v1");
             var document = await openApiDocumentProvider.GetOpenApiDocumentAsync(default);
             return document.Paths[path].Operations![HttpMethod.Get];
+        }
+
+        private static void RegisterCustomMethods(IServiceCollection services, bool includeCustomMethods)
+        {
+            if (!includeCustomMethods)
+            {
+                return;
+            }
+
+            services.AddSingleton<PaginationOpenApiCustomMethods>();
+            services.AddSingleton<IPaginationCustomFilterMethods>(x => x.GetRequiredService<PaginationOpenApiCustomMethods>());
+            services.AddSingleton<IPaginationCustomSortsMethods>(x => x.GetRequiredService<PaginationOpenApiCustomMethods>());
         }
 
         private static void AssertQueryParameterDescriptionMatches(OpenApiOperation expected, OpenApiOperation actual, string parameterName)

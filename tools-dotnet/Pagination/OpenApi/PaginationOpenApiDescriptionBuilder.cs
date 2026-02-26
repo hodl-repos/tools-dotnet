@@ -27,8 +27,12 @@ namespace tools_dotnet.Pagination.OpenApi
 
             foreach (var field in fields.Where(x => x.CanFilter))
             {
-                var operators = string.Join(", ", field.Operators.Select(x => x.Id));
-                lines.Add($"- `{field.Name}` ({PaginationOpenApiMetadataProvider.GetTypeDisplayName(field.MemberType)}): {operators}");
+                var operators = field.Operators.Count == 0
+                    ? "custom"
+                    : string.Join(", ", field.Operators.Select(x => x.Id));
+                var filterTypeDisplayName = field.FilterTypeDisplayNameOverride ??
+                                            PaginationOpenApiMetadataProvider.GetTypeDisplayName(field.MemberType);
+                lines.Add($"- `{field.Name}` ({filterTypeDisplayName}): {operators}");
             }
 
             return string.Join(Environment.NewLine, lines);

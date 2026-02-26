@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using tools_dotnet.Paging;
+using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,12 @@ namespace tools_dotnet.Pagination.OpenApi
 {
     internal static class PaginationOpenApiOperationDescriptionApplier
     {
-        public static void Apply(OpenApiOperation operation, MethodInfo? methodInfo, IList<object>? endpointMetadata)
+        public static void Apply(
+            OpenApiOperation operation,
+            MethodInfo? methodInfo,
+            IList<object>? endpointMetadata,
+            IReadOnlyList<IPaginationCustomFilterMethods>? customFilterMethods = null,
+            IReadOnlyList<IPaginationCustomSortsMethods>? customSortMethods = null)
         {
             if (operation == null)
             {
@@ -25,7 +31,10 @@ namespace tools_dotnet.Pagination.OpenApi
                 return;
             }
 
-            var fieldDescriptors = PaginationOpenApiMetadataProvider.GetFieldDescriptors(modelType);
+            var fieldDescriptors = PaginationOpenApiMetadataProvider.GetFieldDescriptors(
+                modelType,
+                customFilterMethods,
+                customSortMethods);
 
             if (fieldDescriptors.Count == 0)
             {

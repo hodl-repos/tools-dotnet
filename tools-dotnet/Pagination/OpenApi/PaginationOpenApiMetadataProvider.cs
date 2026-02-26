@@ -1,5 +1,6 @@
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
+using tools_dotnet.Pagination.Services;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -66,7 +67,10 @@ namespace tools_dotnet.Pagination.OpenApi
             typeof(TimeSpan)
         };
 
-        public static IReadOnlyList<PaginationOpenApiFieldDescriptor> GetFieldDescriptors(Type modelType)
+        public static IReadOnlyList<PaginationOpenApiFieldDescriptor> GetFieldDescriptors(
+            Type modelType,
+            IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
         {
             if (modelType == null)
             {
@@ -82,6 +86,16 @@ namespace tools_dotnet.Pagination.OpenApi
                 depth: 0,
                 result,
                 activePathTypes);
+
+            if (customFilterMethods != null)
+            {
+                CollectCustomFilterMethodDescriptors(modelType, customFilterMethods, result);
+            }
+
+            if (customSortMethods != null)
+            {
+                CollectCustomSortMethodDescriptors(modelType, customSortMethods, result);
+            }
 
             return result
                 .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
@@ -234,6 +248,168 @@ namespace tools_dotnet.Pagination.OpenApi
             {
                 activePathTypes.Remove(modelType);
             }
+        }
+
+        private static void CollectCustomFilterMethodDescriptors(
+            Type modelType,
+            IEnumerable<IPaginationCustomFilterMethods> customFilterMethods,
+            ICollection<PaginationOpenApiFieldDescriptor> result)
+        {
+            foreach (var methodsContainer in customFilterMethods)
+            {
+                foreach (var method in methodsContainer
+                    .GetType()
+                    .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(x => !x.IsSpecialName && x.DeclaringType != typeof(object)))
+                {
+                    if (!TryCloseCustomMethod(method, modelType, out var closedMethod) || closedMethod == null)
+                    {
+                        continue;
+                    }
+
+                    if (!IsValidCustomFilterMethodSignature(closedMethod, modelType))
+                    {
+                        continue;
+                    }
+
+                    result.Add(new PaginationOpenApiFieldDescriptor(
+                        method.Name,
+                        typeof(string),
+                        canFilter: true,
+                        canSort: false,
+                        operators: Array.Empty<PaginationOperator>(),
+                        filterTypeDisplayNameOverride: "custom"));
+                }
+            }
+        }
+
+        private static void CollectCustomSortMethodDescriptors(
+            Type modelType,
+            IEnumerable<IPaginationCustomSortsMethods> customSortMethods,
+            ICollection<PaginationOpenApiFieldDescriptor> result)
+        {
+            foreach (var methodsContainer in customSortMethods)
+            {
+                foreach (var method in methodsContainer
+                    .GetType()
+                    .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(x => !x.IsSpecialName && x.DeclaringType != typeof(object)))
+                {
+                    if (!TryCloseCustomMethod(method, modelType, out var closedMethod) || closedMethod == null)
+                    {
+                        continue;
+                    }
+
+                    if (!IsValidCustomSortMethodSignature(closedMethod, modelType))
+                    {
+                        continue;
+                    }
+
+                    result.Add(new PaginationOpenApiFieldDescriptor(
+                        method.Name,
+                        typeof(string),
+                        canFilter: false,
+                        canSort: true,
+                        operators: Array.Empty<PaginationOperator>()));
+                }
+            }
+        }
+
+        private static bool TryCloseCustomMethod(MethodInfo method, Type modelType, out MethodInfo? closedMethod)
+        {
+            if (!method.IsGenericMethodDefinition)
+            {
+                closedMethod = method;
+                return true;
+            }
+
+            var genericArguments = method.GetGenericArguments();
+
+            if (genericArguments.Length != 1)
+            {
+                closedMethod = null;
+                return false;
+            }
+
+            try
+            {
+                closedMethod = method.MakeGenericMethod(modelType);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                closedMethod = null;
+                return false;
+            }
+        }
+
+        private static bool IsValidCustomFilterMethodSignature(MethodInfo method, Type modelType)
+        {
+            var parameters = method.GetParameters();
+            var expectedQueryableType = typeof(IQueryable<>).MakeGenericType(modelType);
+
+            if (parameters.Length == 0 || parameters.Length > 4)
+            {
+                return false;
+            }
+
+            if (!parameters[0].ParameterType.IsAssignableFrom(expectedQueryableType))
+            {
+                return false;
+            }
+
+            if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(string))
+            {
+                return false;
+            }
+
+            if (parameters.Length >= 3 &&
+                parameters[2].ParameterType != typeof(string[]) &&
+                parameters[2].ParameterType != typeof(IReadOnlyList<string>) &&
+                parameters[2].ParameterType != typeof(IEnumerable<string>))
+            {
+                return false;
+            }
+
+            if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
+            {
+                return false;
+            }
+
+            return typeof(IQueryable<>).MakeGenericType(modelType).IsAssignableFrom(method.ReturnType);
+        }
+
+        private static bool IsValidCustomSortMethodSignature(MethodInfo method, Type modelType)
+        {
+            var parameters = method.GetParameters();
+            var expectedQueryableType = typeof(IQueryable<>).MakeGenericType(modelType);
+
+            if (parameters.Length == 0 || parameters.Length > 4)
+            {
+                return false;
+            }
+
+            if (!parameters[0].ParameterType.IsAssignableFrom(expectedQueryableType))
+            {
+                return false;
+            }
+
+            if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(bool))
+            {
+                return false;
+            }
+
+            if (parameters.Length >= 3 && parameters[2].ParameterType != typeof(bool))
+            {
+                return false;
+            }
+
+            if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
+            {
+                return false;
+            }
+
+            return typeof(IQueryable<>).MakeGenericType(modelType).IsAssignableFrom(method.ReturnType);
         }
 
         private static bool CanTraverseNestedMembers(Type memberType)

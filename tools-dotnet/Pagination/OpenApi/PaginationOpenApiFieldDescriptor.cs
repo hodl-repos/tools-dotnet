@@ -11,13 +11,15 @@ namespace tools_dotnet.Pagination.OpenApi
             Type memberType,
             bool canFilter,
             bool canSort,
-            IReadOnlyList<PaginationOperator> operators)
+            IReadOnlyList<PaginationOperator> operators,
+            string? filterTypeDisplayNameOverride = null)
         {
             Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentException("Field name cannot be null or whitespace.", nameof(name)) : name;
             MemberType = memberType ?? throw new ArgumentNullException(nameof(memberType));
             CanFilter = canFilter;
             CanSort = canSort;
             Operators = operators ?? throw new ArgumentNullException(nameof(operators));
+            FilterTypeDisplayNameOverride = filterTypeDisplayNameOverride;
         }
 
         public string Name { get; }
@@ -29,5 +31,7 @@ namespace tools_dotnet.Pagination.OpenApi
         public bool CanSort { get; }
 
         public IReadOnlyList<PaginationOperator> Operators { get; }
+
+        public string? FilterTypeDisplayNameOverride { get; }
     }
 }

@@ -23,6 +23,7 @@ namespace tools_dotnet.Pagination.Services
         private readonly IPaginationModelDeserializer _deserializer;
         private readonly IReadOnlyList<IPaginationFilterExpressionProvider> _filterExpressionProviders;
         private readonly IReadOnlyList<IPaginationCustomFilterMethods> _customFilterMethods;
+        private readonly IReadOnlyList<IPaginationCustomSortsMethods> _customSortMethods;
 
         /// <summary>
         /// Creates a pagination processor.
@@ -30,10 +31,12 @@ namespace tools_dotnet.Pagination.Services
         /// <param name="deserializer">Optional deserializer for incoming models.</param>
         /// <param name="filterExpressionProviders">Optional filter providers. If not supplied, the default provider is used.</param>
         /// <param name="customFilterMethods">Optional custom filter method containers used when a field does not map to a member.</param>
+        /// <param name="customSortMethods">Optional custom sort method containers used when a field does not map to a member.</param>
         public PaginationProcessor(
             IPaginationModelDeserializer? deserializer = null,
             IEnumerable<IPaginationFilterExpressionProvider>? filterExpressionProviders = null,
-            IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null)
+            IEnumerable<IPaginationCustomFilterMethods>? customFilterMethods = null,
+            IEnumerable<IPaginationCustomSortsMethods>? customSortMethods = null)
         {
             _deserializer = deserializer ?? new PaginationModelDeserializer();
 
@@ -48,6 +51,9 @@ namespace tools_dotnet.Pagination.Services
             _customFilterMethods = customFilterMethods == null
                 ? Array.Empty<IPaginationCustomFilterMethods>()
                 : customFilterMethods.ToList();
+            _customSortMethods = customSortMethods == null
+                ? Array.Empty<IPaginationCustomSortsMethods>()
+                : customSortMethods.ToList();
         }
 
         /// <inheritdoc />
@@ -79,7 +85,7 @@ namespace tools_dotnet.Pagination.Services
 
             if (applySorting)
             {
-                query = ApplySorts(query, deserializedModel.Sorts);
+                query = ApplySorts(query, deserializedModel.Sorts, dataForCustomMethods);
             }
 
             if (applyPagination)
@@ -195,7 +201,7 @@ namespace tools_dotnet.Pagination.Services
 
             foreach (var method in methods)
             {
-                if (!TryCloseCustomFilterMethod<TEntity>(method, out var closedMethod) || closedMethod == null)
+                if (!TryCloseCustomMethod<TEntity>(method, out var closedMethod) || closedMethod == null)
                 {
                     continue;
                 }
@@ -262,7 +268,7 @@ namespace tools_dotnet.Pagination.Services
             return false;
         }
 
-        private static bool TryCloseCustomFilterMethod<TEntity>(MethodInfo method, out MethodInfo? closedMethod)
+        private static bool TryCloseCustomMethod<TEntity>(MethodInfo method, out MethodInfo? closedMethod)
         {
             if (!method.IsGenericMethodDefinition)
             {
@@ -320,7 +326,10 @@ namespace tools_dotnet.Pagination.Services
             return null;
         }
 
-        private static IQueryable<TEntity> ApplySorts<TEntity>(IQueryable<TEntity> query, IReadOnlyList<PaginationSortTerm> sorts)
+        private IQueryable<TEntity> ApplySorts<TEntity>(
+            IQueryable<TEntity> query,
+            IReadOnlyList<PaginationSortTerm> sorts,
+            object[]? dataForCustomMethods)
         {
             if (sorts.Count == 0)
             {
@@ -328,13 +337,27 @@ namespace tools_dotnet.Pagination.Services
             }
 
             IOrderedQueryable<TEntity>? orderedQuery = null;
+            IQueryable<TEntity> currentQuery = query;
 
             foreach (var sort in sorts)
             {
+                var sourceForSort = orderedQuery ?? currentQuery;
                 var parameterExpression = Expression.Parameter(typeof(TEntity), "entity");
 
                 if (!TryBuildMemberExpression(parameterExpression, sort.Field, out var memberExpression, applyFilterRules: false) || memberExpression == null)
                 {
+                    if (TryApplyCustomSortMethod(
+                        sourceForSort,
+                        sort.Field,
+                        orderedQuery != null,
+                        sort.Descending,
+                        dataForCustomMethods,
+                        out var customSortedQuery))
+                    {
+                        currentQuery = customSortedQuery;
+                        orderedQuery = customSortedQuery as IOrderedQueryable<TEntity>;
+                    }
+
                     continue;
                 }
 
@@ -345,7 +368,7 @@ namespace tools_dotnet.Pagination.Services
                     orderedQuery = (IOrderedQueryable<TEntity>)InvokeOrderMethod(
                         sort.Descending ? OrderByDescendingMethod : OrderByMethod,
                         typeof(TEntity),
-                        query,
+                        sourceForSort,
                         keySelector);
                 }
                 else
@@ -353,12 +376,132 @@ namespace tools_dotnet.Pagination.Services
                     orderedQuery = (IOrderedQueryable<TEntity>)InvokeOrderMethod(
                         sort.Descending ? ThenByDescendingMethod : ThenByMethod,
                         typeof(TEntity),
-                        orderedQuery,
+                        sourceForSort,
                         keySelector);
+                }
+
+                currentQuery = orderedQuery;
+            }
+
+            return orderedQuery ?? currentQuery;
+        }
+
+        private bool TryApplyCustomSortMethod<TEntity>(
+            IQueryable<TEntity> query,
+            string field,
+            bool useThenBy,
+            bool descending,
+            object[]? dataForCustomMethods,
+            out IQueryable<TEntity> sortedQuery)
+        {
+            sortedQuery = query;
+
+            if (_customSortMethods.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var customSortMethods in _customSortMethods)
+            {
+                if (TryInvokeCustomSortMethod(
+                    query,
+                    customSortMethods,
+                    field,
+                    useThenBy,
+                    descending,
+                    dataForCustomMethods,
+                    out sortedQuery))
+                {
+                    return true;
                 }
             }
 
-            return orderedQuery ?? query;
+            return false;
+        }
+
+        private static bool TryInvokeCustomSortMethod<TEntity>(
+            IQueryable<TEntity> query,
+            IPaginationCustomSortsMethods customSortMethods,
+            string methodName,
+            bool useThenBy,
+            bool descending,
+            object[]? dataForCustomMethods,
+            out IQueryable<TEntity> sortedQuery)
+        {
+            sortedQuery = query;
+
+            var methods = customSortMethods
+                .GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Where(x => string.Equals(x.Name, methodName, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var method in methods)
+            {
+                if (!TryCloseCustomMethod<TEntity>(method, out var closedMethod) || closedMethod == null)
+                {
+                    continue;
+                }
+
+                var parameters = closedMethod.GetParameters();
+
+                if (parameters.Length == 0 || parameters.Length > 4)
+                {
+                    continue;
+                }
+
+                if (!parameters[0].ParameterType.IsAssignableFrom(typeof(IQueryable<TEntity>)))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(bool))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 3 && parameters[2].ParameterType != typeof(bool))
+                {
+                    continue;
+                }
+
+                if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
+                {
+                    continue;
+                }
+
+                if (!typeof(IQueryable<TEntity>).IsAssignableFrom(closedMethod.ReturnType))
+                {
+                    continue;
+                }
+
+                var args = new object?[parameters.Length];
+                args[0] = query;
+
+                if (parameters.Length >= 2)
+                {
+                    args[1] = useThenBy;
+                }
+
+                if (parameters.Length >= 3)
+                {
+                    args[2] = descending;
+                }
+
+                if (parameters.Length == 4)
+                {
+                    args[3] = dataForCustomMethods;
+                }
+
+                var result = closedMethod.Invoke(customSortMethods, args);
+
+                if (result is IQueryable<TEntity> typedResult)
+                {
+                    sortedQuery = typedResult;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static IQueryable<TEntity> ApplyPagination<TEntity>(IQueryable<TEntity> query, int page, int pageSize)
