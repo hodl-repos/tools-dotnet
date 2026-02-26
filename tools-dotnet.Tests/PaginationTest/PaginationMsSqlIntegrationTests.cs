@@ -1,7 +1,7 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Shouldly;
-using Testcontainers.PostgreSql;
+using Testcontainers.MsSql;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
 using tools_dotnet.Pagination.Services;
@@ -9,10 +9,10 @@ using tools_dotnet.Pagination.Services;
 namespace tools_dotnet.Tests.PaginationTest
 {
     [TestFixture]
-    public class PaginationPostgresqlIntegrationTests
+    public class PaginationMsSqlIntegrationTests
     {
         private static readonly PaginationProcessor Processor = new(
-            filterExpressionProviders: [new PostgreSqlPaginationFilterExpressionProvider()]
+            filterExpressionProviders: [new SqlServerPaginationFilterExpressionProvider()]
         );
 
         private static readonly IReadOnlyList<int> AllIds = [1, 2, 3, 4, 5];
@@ -22,40 +22,38 @@ namespace tools_dotnet.Tests.PaginationTest
         private static readonly Guid Guid4 = Guid.Parse("44444444-4444-4444-4444-444444444444");
         private static readonly Guid Guid5 = Guid.Parse("55555555-5555-5555-5555-555555555555");
 
-        private readonly PostgreSqlContainer _postgreSqlContainer = new PostgreSqlBuilder(
-            "postgres:18-alpine"
+        private readonly MsSqlContainer _msSqlContainer = new MsSqlBuilder(
+            "mcr.microsoft.com/mssql/server:2022-latest"
         )
-            .WithUsername("postgres")
-            .WithPassword("postgres")
-            .WithDatabase("test_db")
+            .WithPassword("Your_strong_password123!")
             .WithCleanUp(true)
             .Build();
 
-        private DbContextOptions<PaginationPostgresqlTestDbContext> _dbContextOptions = null!;
+        private DbContextOptions<PaginationMsSqlTestDbContext> _dbContextOptions = null!;
 
         [OneTimeSetUp]
         public async Task BeforeAllAsync()
         {
-            await _postgreSqlContainer.StartAsync();
+            await _msSqlContainer.StartAsync();
         }
 
         [OneTimeTearDown]
         public async Task AfterAllAsync()
         {
-            await _postgreSqlContainer.DisposeAsync();
+            await _msSqlContainer.DisposeAsync();
         }
 
         [SetUp]
         public async Task SetupRun()
         {
-            _dbContextOptions = CreateDbContextOptions(_postgreSqlContainer.GetConnectionString());
+            _dbContextOptions = CreateDbContextOptions(_msSqlContainer.GetConnectionString());
 
-            await using (var dbContext = new PaginationPostgresqlTestDbContext(_dbContextOptions))
+            await using (var dbContext = new PaginationMsSqlTestDbContext(_dbContextOptions))
             {
                 await dbContext.Database.EnsureCreatedAsync();
 
                 dbContext.Entities.AddRange(
-                    new PaginationPostgresqlEntity
+                    new PaginationMsSqlEntity
                     {
                         Id = 1,
                         Name = "Milk",
@@ -63,7 +61,7 @@ namespace tools_dotnet.Tests.PaginationTest
                         LongValue = 100,
                         ExternalId = Guid1,
                     },
-                    new PaginationPostgresqlEntity
+                    new PaginationMsSqlEntity
                     {
                         Id = 2,
                         Name = "MILKY",
@@ -71,7 +69,7 @@ namespace tools_dotnet.Tests.PaginationTest
                         LongValue = 200,
                         ExternalId = Guid2,
                     },
-                    new PaginationPostgresqlEntity
+                    new PaginationMsSqlEntity
                     {
                         Id = 3,
                         Name = "almond milk",
@@ -79,7 +77,7 @@ namespace tools_dotnet.Tests.PaginationTest
                         LongValue = 300,
                         ExternalId = Guid3,
                     },
-                    new PaginationPostgresqlEntity
+                    new PaginationMsSqlEntity
                     {
                         Id = 4,
                         Name = "Bread",
@@ -87,7 +85,7 @@ namespace tools_dotnet.Tests.PaginationTest
                         LongValue = 400,
                         ExternalId = Guid4,
                     },
-                    new PaginationPostgresqlEntity
+                    new PaginationMsSqlEntity
                     {
                         Id = 5,
                         Name = null,
@@ -116,27 +114,33 @@ namespace tools_dotnet.Tests.PaginationTest
                 $"name{PaginationOperator.NotEqualsCaseInsensitive.Id}milk",
                 new[] { 2, 3, 4, 5 }
             );
-            yield return new TestCaseData($"name{PaginationOperator.Contains.Id}milk", new[] { 3 });
+            yield return new TestCaseData(
+                $"name{PaginationOperator.Contains.Id}milk",
+                new[] { 1, 2, 3 }
+            );
             yield return new TestCaseData(
                 $"name{PaginationOperator.ContainsCaseInsensitive.Id}milk",
                 new[] { 1, 2, 3 }
             );
             yield return new TestCaseData(
                 $"name{PaginationOperator.NotContains.Id}milk",
-                new[] { 1, 2, 4, 5 }
+                new[] { 4, 5 }
             );
             yield return new TestCaseData(
                 $"name{PaginationOperator.NotContainsCaseInsensitive.Id}milk",
                 new[] { 4, 5 }
             );
-            yield return new TestCaseData($"name{PaginationOperator.StartsWith.Id}Mi", new[] { 1 });
+            yield return new TestCaseData(
+                $"name{PaginationOperator.StartsWith.Id}Mi",
+                new[] { 1, 2 }
+            );
             yield return new TestCaseData(
                 $"name{PaginationOperator.StartsWithCaseInsensitive.Id}mi",
                 new[] { 1, 2 }
             );
             yield return new TestCaseData(
                 $"name{PaginationOperator.NotStartsWith.Id}Mi",
-                new[] { 2, 3, 4, 5 }
+                new[] { 3, 4, 5 }
             );
             yield return new TestCaseData(
                 $"name{PaginationOperator.NotStartsWithCaseInsensitive.Id}mi",
@@ -223,7 +227,7 @@ namespace tools_dotnet.Tests.PaginationTest
 
         private async Task<IReadOnlyList<int>> ApplyFilterAsync(string filters)
         {
-            await using var dbContext = new PaginationPostgresqlTestDbContext(_dbContextOptions);
+            await using var dbContext = new PaginationMsSqlTestDbContext(_dbContextOptions);
             var model = new PaginationModel { Filters = filters };
 
             var query = Processor.Apply(
@@ -341,34 +345,34 @@ namespace tools_dotnet.Tests.PaginationTest
             return [.. AllIds];
         }
 
-        private static DbContextOptions<PaginationPostgresqlTestDbContext> CreateDbContextOptions(
+        private static DbContextOptions<PaginationMsSqlTestDbContext> CreateDbContextOptions(
             string containerConnectionString
         )
         {
-            var builder = new NpgsqlConnectionStringBuilder(containerConnectionString)
+            var builder = new SqlConnectionStringBuilder(containerConnectionString)
             {
-                Database = $"test_{Guid.NewGuid():N}",
+                InitialCatalog = $"test_{Guid.NewGuid():N}",
             };
 
-            return new DbContextOptionsBuilder<PaginationPostgresqlTestDbContext>()
-                .UseNpgsql(builder.ConnectionString)
+            return new DbContextOptionsBuilder<PaginationMsSqlTestDbContext>()
+                .UseSqlServer(builder.ConnectionString)
                 .Options;
         }
 
-        private sealed class PaginationPostgresqlTestDbContext : DbContext
+        private sealed class PaginationMsSqlTestDbContext : DbContext
         {
-            public PaginationPostgresqlTestDbContext(
-                DbContextOptions<PaginationPostgresqlTestDbContext> options
+            public PaginationMsSqlTestDbContext(
+                DbContextOptions<PaginationMsSqlTestDbContext> options
             )
                 : base(options) { }
 
-            public DbSet<PaginationPostgresqlEntity> Entities => Set<PaginationPostgresqlEntity>();
+            public DbSet<PaginationMsSqlEntity> Entities => Set<PaginationMsSqlEntity>();
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
-                modelBuilder.Entity<PaginationPostgresqlEntity>(entity =>
+                modelBuilder.Entity<PaginationMsSqlEntity>(entity =>
                 {
-                    entity.ToTable("pagination_postgresql_entities");
+                    entity.ToTable("pagination_mssql_entities");
                     entity.HasKey(x => x.Id);
                     entity.Property(x => x.Id).ValueGeneratedNever();
                     entity.Property(x => x.Name).HasColumnName("name");
@@ -379,7 +383,7 @@ namespace tools_dotnet.Tests.PaginationTest
             }
         }
 
-        private sealed class PaginationPostgresqlEntity
+        private sealed class PaginationMsSqlEntity
         {
             [Pagination(Name = "id", CanFilter = false, CanSort = false)]
             public int Id { get; init; }
