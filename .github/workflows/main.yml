@@ -1,7 +1,8 @@
 on:
   push:
     tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
+    - "v[0-9]*.[0-9]*.[0-9]*"
+    - "v[0-9]*.[0-9]*.[0-9]*-pre*"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,7 +15,15 @@ jobs:
       with:
         dotnet-version: '10.x'
     - name: Set VERSION variable from tag
-      run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+      shell: bash
+      run: |
+        TAG="${GITHUB_REF_NAME#v}"
+        if [[ "${TAG}" == *"-pre"* ]]; then
+          VERSION="${TAG%%-pre*}-pre"
+        else
+          VERSION="${TAG}"
+        fi
+        echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
     - name: Pack
       run: dotnet pack --configuration Release /p:Version=${VERSION} --output .
     - name: Push
