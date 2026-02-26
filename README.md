@@ -178,6 +178,13 @@ var citextProcessor = new PaginationProcessor(
 Pagination OpenAPI support can enrich `filters` and `sorts` query parameter descriptions in `openapi.json` by reading `[Pagination]` attributes.
 Nested fields are included when parent members allow sub-properties (`CanFilterSubProperties` / `CanSortSubProperties`).
 
+Supported integrations:
+
+- Swashbuckle (`AddSwaggerGen`)
+- ASP.NET Core OpenAPI (`AddOpenApi`)
+
+### Swashbuckle / SwaggerGen
+
 ```csharp
 using Microsoft.OpenApi.Models;
 using tools_dotnet.Pagination.OpenApi;
@@ -185,6 +192,17 @@ using tools_dotnet.Pagination.OpenApi;
 services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+    options.AddPaginationOpenApiSupport();
+});
+```
+
+### Microsoft.AspNetCore.OpenApi
+
+```csharp
+using tools_dotnet.Pagination.OpenApi;
+
+services.AddOpenApi("v1", options =>
+{
     options.AddPaginationOpenApiSupport();
 });
 ```

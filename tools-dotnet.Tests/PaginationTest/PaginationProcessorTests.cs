@@ -39,10 +39,7 @@ namespace tools_dotnet.Tests.PaginationTest
         public void Apply_ShouldHandleNegatedMultiValueFilter()
         {
             var processor = new PaginationProcessor();
-            var model = new PaginationModel
-            {
-                Filters = "name!=Anna|Bob"
-            };
+            var model = new PaginationModel { Filters = "name!=Anna|Bob" };
 
             var source = new List<TestEntity>
             {

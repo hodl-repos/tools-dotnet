@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -92,7 +93,7 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Swagger_ShouldDocumentFiltersAndSorts_FromReturnType()
         {
-            var operation = GetOperation("/openapi-pagination-tests/inferred");
+            var operation = GetSwaggerOperation("/openapi-pagination-tests/inferred");
             var filtersParameter = GetQueryParameter(operation, "filters");
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
@@ -119,7 +120,7 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Swagger_ShouldDocumentFilters_FromExplicitPaginationOpenApiTypeAttribute()
         {
-            var operation = GetOperation("/openapi-pagination-tests/explicit");
+            var operation = GetSwaggerOperation("/openapi-pagination-tests/explicit");
             var filtersParameter = GetQueryParameter(operation, "filters");
 
             filtersParameter.Description.ShouldNotBeNull();
@@ -131,7 +132,7 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Swagger_ShouldDocumentNestedFields_WhenSubPropertiesAreEnabled()
         {
-            var operation = GetOperation("/openapi-pagination-tests/nested");
+            var operation = GetSwaggerOperation("/openapi-pagination-tests/nested");
             var filtersParameter = GetQueryParameter(operation, "filters");
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
@@ -146,7 +147,40 @@ namespace tools_dotnet.Tests.PaginationTest
             sortsParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
         }
 
-        private static OpenApiOperation GetOperation(string path)
+        [Test]
+        public async Task MicrosoftOpenApi_ShouldMatchSwagger_ForInferredFiltersAndSorts()
+        {
+            var path = "/openapi-pagination-tests/inferred";
+            var swaggerOperation = GetSwaggerOperation(path);
+            var microsoftOperation = await GetMicrosoftOpenApiOperationAsync(path);
+
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "filters");
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "sorts");
+        }
+
+        [Test]
+        public async Task MicrosoftOpenApi_ShouldMatchSwagger_ForExplicitModelType()
+        {
+            var path = "/openapi-pagination-tests/explicit";
+            var swaggerOperation = GetSwaggerOperation(path);
+            var microsoftOperation = await GetMicrosoftOpenApiOperationAsync(path);
+
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "filters");
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "sorts");
+        }
+
+        [Test]
+        public async Task MicrosoftOpenApi_ShouldMatchSwagger_ForNestedFields()
+        {
+            var path = "/openapi-pagination-tests/nested";
+            var swaggerOperation = GetSwaggerOperation(path);
+            var microsoftOperation = await GetMicrosoftOpenApiOperationAsync(path);
+
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "filters");
+            AssertQueryParameterDescriptionMatches(swaggerOperation, microsoftOperation, "sorts");
+        }
+
+        private static OpenApiOperation GetSwaggerOperation(string path)
         {
             var services = new ServiceCollection();
             services.AddLogging();
@@ -170,6 +204,39 @@ namespace tools_dotnet.Tests.PaginationTest
             var swaggerProvider = serviceProvider.GetRequiredService<ISwaggerProvider>();
             var document = swaggerProvider.GetSwagger("v1");
             return document.Paths[path].Operations![HttpMethod.Get];
+        }
+
+        private static async Task<OpenApiOperation> GetMicrosoftOpenApiOperationAsync(string path)
+        {
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton<IWebHostEnvironment>(new TestWebHostEnvironment());
+            services.AddSingleton<IHostEnvironment>(x => x.GetRequiredService<IWebHostEnvironment>());
+
+            services
+                .AddControllers()
+                .PartManager
+                .ApplicationParts
+                .Add(new AssemblyPart(typeof(PaginationOpenApiOperationFilterTests).Assembly));
+
+            services.AddEndpointsApiExplorer();
+            services.AddOpenApi("v1", options =>
+            {
+                options.AddPaginationOpenApiSupport();
+            });
+
+            using var serviceProvider = services.BuildServiceProvider();
+            var openApiDocumentProvider = serviceProvider.GetRequiredKeyedService<IOpenApiDocumentProvider>("v1");
+            var document = await openApiDocumentProvider.GetOpenApiDocumentAsync(default);
+            return document.Paths[path].Operations![HttpMethod.Get];
+        }
+
+        private static void AssertQueryParameterDescriptionMatches(OpenApiOperation expected, OpenApiOperation actual, string parameterName)
+        {
+            var expectedDescription = GetQueryParameter(expected, parameterName).Description;
+            var actualDescription = GetQueryParameter(actual, parameterName).Description;
+
+            actualDescription.ShouldBe(expectedDescription);
         }
 
         private static IOpenApiParameter GetQueryParameter(OpenApiOperation operation, string name)

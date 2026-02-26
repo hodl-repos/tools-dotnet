@@ -14,6 +14,7 @@
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="Enum.Ext" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql" />
