@@ -24,6 +24,8 @@ jobs:
           VERSION="${TAG}"
         fi
         echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+    - name: Test
+      run: dotnet test tools-dotnet.sln --configuration Release
     - name: Pack
       run: dotnet pack --configuration Release /p:Version=${VERSION} --output .
     - name: Push
