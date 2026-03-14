@@ -36,22 +36,29 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor, concurrencyConfiguration) { }
 
-        public virtual async Task<TIdType> AddAsync(TInputDto item)
+        public virtual async Task<TIdType> AddAsync(
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
             var entity = _mapper.Map<TEntity>(item);
 
-            return await AddAsync(entity);
+            return await AddAsync(entity, cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
@@ -59,11 +66,12 @@ namespace tools_dotnet.Dao.Crud.Impl
                 )
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
@@ -71,11 +79,12 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(
@@ -87,10 +96,12 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
@@ -98,11 +109,12 @@ namespace tools_dotnet.Dao.Crud.Impl
                 )
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(
@@ -114,23 +126,28 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
                 apiPagination,
                 _paginationProcessor,
-                _mapper
+                _mapper,
+                cancellationToken: cancellationToken
             );
         }
 
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
@@ -140,14 +157,16 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
                 apiPagination,
                 _paginationProcessor,
-                _mapper
+                _mapper,
+                cancellationToken: cancellationToken
             );
         }
 
         public virtual async Task<TDto?> FindDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
-            bool ignoreDeletedWithAuditable = true
+            bool ignoreDeletedWithAuditable = true,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(
@@ -160,19 +179,22 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             if (throwOnMultipleFound)
             {
-                return await query.SingleOrDefaultAsync();
+                return await query.SingleOrDefaultAsync(cancellationToken);
             }
 
-            return await query.FirstOrDefaultAsync();
+            return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
-        public virtual async Task<TDto> GetByIdDtoAsync(TIdType id)
+        public virtual async Task<TDto> GetByIdDtoAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
             var dto = await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .AsNoTracking()
                 .Where(e => e.Id.Equals(id))
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
             {
@@ -182,7 +204,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
-        public virtual async Task<TDto> GetByIdDtoIncludingDeletedAsync(TIdType id)
+        public virtual async Task<TDto> GetByIdDtoIncludingDeletedAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
             var dto = await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
@@ -191,7 +216,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .AsNoTracking()
                 .Where(e => e.Id.Equals(id))
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
             {
@@ -201,7 +226,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
-        public virtual async Task UpdateAsync(TInputDto item)
+        public virtual async Task UpdateAsync(
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
             var concurrencyToken =
                 CrudConcurrencyHelper.GetRequiredRequestConcurrencyToken<TConcurrencyToken>(
@@ -209,12 +237,16 @@ namespace tools_dotnet.Dao.Crud.Impl
                     item
                 );
 
-            await UpdateAsync(item, concurrencyToken);
+            await UpdateAsync(item, concurrencyToken, cancellationToken);
         }
 
-        public virtual async Task UpdateAsync(TInputDto item, TConcurrencyToken concurrencyToken)
+        public virtual async Task UpdateAsync(
+            TInputDto item,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dbEntity = await GetByIdAsync(item.Id);
+            var dbEntity = await GetByIdAsync(item.Id, cancellationToken);
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 dbEntity,
@@ -225,14 +257,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
                     _concurrencyConfiguration,
                     ex,
-                    concurrencyToken
+                    concurrencyToken,
+                    cancellationToken
                 );
             }
             catch (DbUpdateException ex)

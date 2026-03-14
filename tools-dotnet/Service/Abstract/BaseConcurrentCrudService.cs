@@ -26,69 +26,98 @@ namespace tools_dotnet.Service.Abstract
         protected BaseConcurrentCrudService(IMapper mapper, TRepo baseRepo, TValidator validator)
             : base(mapper, baseRepo, validator) { }
 
-        public virtual async Task<TConcurrencyToken> GetConcurrencyTokenAsync(TIdType id)
+        public virtual async Task<TConcurrencyToken> GetConcurrencyTokenAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetConcurrencyTokenAsync(id);
+            return await _baseRepo.GetConcurrencyTokenAsync(id, cancellationToken);
         }
 
-        public override async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync()
+        public override async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDtoIncludingDeletedAsync();
+            return await _baseRepo.GetAllDtoIncludingDeletedAsync(cancellationToken);
         }
 
-        public override async Task<IEnumerable<TDto>> GetAllDeletedAsync()
+        public override async Task<IEnumerable<TDto>> GetAllDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDeletedDtoAsync();
+            return await _baseRepo.GetAllDeletedDtoAsync(cancellationToken);
         }
 
-        public override async Task<TDto> GetByIdIncludingDeletedAsync(TIdType id)
+        public override async Task<TDto> GetByIdIncludingDeletedAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id);
+            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id, cancellationToken);
         }
 
-        public virtual async Task UpdateAsync(TDto item, TConcurrencyToken concurrencyToken)
+        public virtual async Task UpdateAsync(
+            TDto item,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _validator.ValidateAndThrowAsync(item);
-            await _baseRepo.UpdateAsync(item, concurrencyToken);
+            await _validator.ValidateAndThrowAsync(item, cancellationToken);
+            await _baseRepo.UpdateAsync(item, concurrencyToken, cancellationToken);
         }
 
-        public override Task RemoveAsync(TIdType id)
+        public override Task RemoveAsync(TIdType id, CancellationToken cancellationToken = default)
         {
             throw new System.InvalidOperationException(
                 $"Use {nameof(RemoveAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware services."
             );
         }
 
-        public override Task RestoreAsync(TIdType id)
+        public override Task RestoreAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
             throw new System.InvalidOperationException(
                 $"Use {nameof(RestoreAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware services."
             );
         }
 
-        public override Task HardRemoveAsync(TIdType id)
+        public override Task HardRemoveAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
             throw new System.InvalidOperationException(
                 $"Use {nameof(HardRemoveAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware services."
             );
         }
 
-        public virtual async Task RemoveAsync(TIdType id, TConcurrencyToken concurrencyToken)
+        public virtual async Task RemoveAsync(
+            TIdType id,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.RemoveAsync(id, concurrencyToken);
+            await _baseRepo.RemoveAsync(id, concurrencyToken, cancellationToken);
         }
 
-        public virtual async Task RestoreAsync(TIdType id, TConcurrencyToken concurrencyToken)
+        public virtual async Task RestoreAsync(
+            TIdType id,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.RestoreAsync(id, concurrencyToken);
+            await _baseRepo.RestoreAsync(id, concurrencyToken, cancellationToken);
         }
 
         public virtual async Task HardRemoveAsync(
             TIdType id,
-            TConcurrencyToken concurrencyToken
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
         )
         {
-            await _baseRepo.HardRemoveAsync(id, concurrencyToken);
+            await _baseRepo.HardRemoveAsync(id, concurrencyToken, cancellationToken);
         }
     }
 }

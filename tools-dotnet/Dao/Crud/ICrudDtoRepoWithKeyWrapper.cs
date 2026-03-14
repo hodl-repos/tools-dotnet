@@ -16,27 +16,52 @@ namespace tools_dotnet.Dao.Crud
         where TDto : class
         where TInputDto : class
     {
-        Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item);
-
-        Task<IEnumerable<TDto>> GetAllDtoAsync();
-
-        Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter);
-
-        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync();
-
-        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filter
+        Task<TKeyWrapper> AddAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync();
+        Task<IEnumerable<TDto>> GetAllDtoAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(Expression<Func<TEntity, bool>> filter);
+        Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        );
 
-        Task UpdateAsync(TKeyWrapper keyWrapper, TInputDto item);
+        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper);
+        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TDto> GetByIdDtoIncludingDeletedAsync(TKeyWrapper keyWrapper);
+        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            CancellationToken cancellationToken = default
+        );
+
+        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        );
+
+        Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<TDto> GetByIdDtoAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<TDto> GetByIdDtoIncludingDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        );
     }
 
     public interface ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>

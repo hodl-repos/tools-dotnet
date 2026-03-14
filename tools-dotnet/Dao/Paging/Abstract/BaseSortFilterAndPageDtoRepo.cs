@@ -24,32 +24,64 @@ namespace tools_dotnet.Dao.Paging.Abstract
             _paginationProcessor = paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
+            return await query.SortFilterAndPageAsync(
+                apiPagination,
+                _paginationProcessor,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().Where(filter).AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
+            return await query.SortFilterAndPageAsync(
+                apiPagination,
+                _paginationProcessor,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().AsNoTracking().Where(filter);
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiPagination, _paginationProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
         }
     }
 }

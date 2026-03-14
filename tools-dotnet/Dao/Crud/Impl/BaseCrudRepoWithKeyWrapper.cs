@@ -35,14 +35,18 @@ namespace tools_dotnet.Dao.Crud.Impl
                 paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
         }
 
-        public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TEntity item)
+        public virtual async Task<TKeyWrapper> AddAsync(
+            TKeyWrapper keyWrapper,
+            TEntity item,
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
                 keyWrapper.UpdateEntityWithContainingResource(item);
 
-                await _dbContext.AddAsync(item);
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.AddAsync(item, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
 
                 keyWrapper.UpdateKeyWrapperByEntity(item);
 
@@ -55,30 +59,36 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
+            CancellationToken cancellationToken = default
+        )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>()).ToListAsync();
+            return await SetupQueryModifications(_dbContext.Set<TEntity>()).ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync()
+        public virtual async Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return await SetupQueryModifications(
                 _dbContext.Set<TEntity>(),
                 SoftDeleteQueryMode.IncludeDeleted
-            ).ToListAsync();
+            ).ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
-            Expression<Func<TEntity, bool>> filters
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
         )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filters)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filters
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
         )
         {
             return await SetupQueryModifications(
@@ -86,19 +96,22 @@ namespace tools_dotnet.Dao.Crud.Impl
                     SoftDeleteQueryMode.IncludeDeleted
                 )
                 .Where(filters)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TEntity>> GetAllDeletedAsync()
+        public virtual async Task<IEnumerable<TEntity>> GetAllDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return await SetupQueryModifications(
                 _dbContext.Set<TEntity>(),
                 SoftDeleteQueryMode.DeletedOnly
-            ).ToListAsync();
+            ).ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TEntity>> GetAllDeletedAsync(
-            Expression<Func<TEntity, bool>> filters
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
         )
         {
             return await SetupQueryModifications(
@@ -106,47 +119,72 @@ namespace tools_dotnet.Dao.Crud.Impl
                     SoftDeleteQueryMode.DeletedOnly
                 )
                 .Where(filters)
-                .ToListAsync();
-        }
-
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiPagination apiPagination)
-        {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
-
-            return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
-            Expression<Func<TEntity, bool>> filter
+            CancellationToken cancellationToken = default
+        )
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
+
+            return await query.SortFilterAndPageAsync(
+                apiPagination,
+                _paginationProcessor,
+                cancellationToken: cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filter)
                 .AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiPagination, _paginationProcessor);
+            return await query.SortFilterAndPageAsync(
+                apiPagination,
+                _paginationProcessor,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<TEntity> GetByIdAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TEntity> GetByIdAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await GetByIdInternalAsync(keyWrapper);
+            return await GetByIdInternalAsync(keyWrapper, cancellationToken: cancellationToken);
         }
 
-        public virtual async Task<TEntity> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TEntity> GetByIdIncludingDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await GetByIdInternalAsync(keyWrapper, false);
+            return await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
         }
 
-        public virtual async Task UpdateAsync(TKeyWrapper keyWrapper, TEntity item)
+        public virtual async Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TEntity item,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dbEntity = await GetByIdInternalAsync(keyWrapper);
+            var dbEntity = await GetByIdInternalAsync(
+                keyWrapper,
+                cancellationToken: cancellationToken
+            );
             _mapper.Map(item, dbEntity);
             keyWrapper.UpdateEntityWithContainingResource(dbEntity);
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
@@ -155,9 +193,15 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public virtual async Task RemoveAsync(TKeyWrapper keyWrapper)
+        public virtual async Task RemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper);
+            var entity = await GetByIdInternalAsync(
+                keyWrapper,
+                cancellationToken: cancellationToken
+            );
 
             if (entity is IAuditableEntity auditableEntity)
             {
@@ -172,7 +216,7 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
@@ -181,9 +225,12 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public virtual async Task RestoreAsync(TKeyWrapper keyWrapper)
+        public virtual async Task RestoreAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper, false);
+            var entity = await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
 
             if (entity is not IAuditableEntity auditableEntity)
             {
@@ -201,7 +248,7 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
@@ -210,14 +257,17 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public virtual async Task HardRemoveAsync(TKeyWrapper keyWrapper)
+        public virtual async Task HardRemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper, false);
+            var entity = await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
             _dbContext.Remove(entity);
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
@@ -228,14 +278,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         protected virtual async Task<TEntity> GetByIdInternalAsync(
             TKeyWrapper keyWrapper,
-            bool ignoreDeletedWithAuditable = true
+            bool ignoreDeletedWithAuditable = true,
+            CancellationToken cancellationToken = default
         )
         {
             var entity = await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
                     ignoreDeletedWithAuditable
                 )
-                .FirstOrDefaultAsync(keyWrapper.GetKeyFilter());
+                .FirstOrDefaultAsync(keyWrapper.GetKeyFilter(), cancellationToken);
 
             if (entity == null)
             {

@@ -100,13 +100,15 @@ namespace tools_dotnet.Dao.Crud.Impl
         internal static Task<ConcurrentModificationException> CreateConcurrentModificationExceptionAsync(
             CrudConcurrencyConfiguration configuration,
             DbUpdateConcurrencyException exception,
-            object? requestConcurrencyToken
+            object? requestConcurrencyToken,
+            CancellationToken cancellationToken = default
         )
         {
             return CreateConcurrentModificationExceptionInternalAsync(
                 configuration,
                 exception,
-                requestConcurrencyToken
+                requestConcurrencyToken,
+                cancellationToken
             );
         }
 
@@ -135,12 +137,14 @@ namespace tools_dotnet.Dao.Crud.Impl
         private static async Task<ConcurrentModificationException> CreateConcurrentModificationExceptionInternalAsync(
             CrudConcurrencyConfiguration configuration,
             DbUpdateConcurrencyException exception,
-            object? requestConcurrencyToken
+            object? requestConcurrencyToken,
+            CancellationToken cancellationToken
         )
         {
             var dbConcurrencyToken = await TryGetDatabaseConcurrencyTokenAsync(
                 configuration,
-                exception
+                exception,
+                cancellationToken
             );
 
             return CreateConcurrentModificationException(
@@ -153,14 +157,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         private static async Task<object?> TryGetDatabaseConcurrencyTokenAsync(
             CrudConcurrencyConfiguration configuration,
-            DbUpdateConcurrencyException exception
+            DbUpdateConcurrencyException exception,
+            CancellationToken cancellationToken
         )
         {
             foreach (var entry in exception.Entries)
             {
                 try
                 {
-                    var databaseValues = await entry.GetDatabaseValuesAsync();
+                    var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
 
                     if (databaseValues == null)
                     {

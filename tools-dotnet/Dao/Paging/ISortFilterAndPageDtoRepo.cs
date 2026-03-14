@@ -9,8 +9,15 @@ namespace tools_dotnet.Dao.Paging
         ISortFilterAndPageRepo<TEntity>
         where TEntity : class
     {
-        Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination);
+        Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        );
 
-        Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination, Expression<Func<TEntity, bool>> filter);
+        Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        );
     }
 }

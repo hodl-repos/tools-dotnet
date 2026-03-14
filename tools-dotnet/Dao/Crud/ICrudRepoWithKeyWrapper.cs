@@ -11,32 +11,60 @@ namespace tools_dotnet.Dao.Crud
         where TEntity : class
         where TKeyWrapper : class, IKeyWrapper<TEntity>
     {
-        Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TEntity item);
-
-        Task<IEnumerable<TEntity>> GetAllAsync();
-
-        Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters);
-
-        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync();
-
-        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filters
+        Task<TKeyWrapper> AddAsync(
+            TKeyWrapper keyWrapper,
+            TEntity item,
+            CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TEntity>> GetAllDeletedAsync();
+        Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TEntity>> GetAllDeletedAsync(Expression<Func<TEntity, bool>> filters);
+        Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TEntity> GetByIdAsync(TKeyWrapper keyWrapper);
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TEntity> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper);
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
+        );
 
-        Task UpdateAsync(TKeyWrapper keyWrapper, TEntity item);
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task RemoveAsync(TKeyWrapper keyWrapper);
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync(
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
+        );
 
-        Task RestoreAsync(TKeyWrapper keyWrapper);
+        Task<TEntity> GetByIdAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        );
 
-        Task HardRemoveAsync(TKeyWrapper keyWrapper);
+        Task<TEntity> GetByIdIncludingDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        );
+
+        Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TEntity item,
+            CancellationToken cancellationToken = default
+        );
+
+        Task RemoveAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
+
+        Task RestoreAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
+
+        Task HardRemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        );
     }
 }

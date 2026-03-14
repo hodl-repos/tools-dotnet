@@ -10,6 +10,7 @@ using tools_dotnet.Dao.Interceptors;
 using tools_dotnet.Dao.KeyWrapper;
 using tools_dotnet.Dto;
 using tools_dotnet.Pagination.Services;
+using tools_dotnet.Paging.Impl;
 using tools_dotnet.Service.Abstract;
 
 namespace tools_dotnet.Tests.CrudTest
@@ -128,6 +129,44 @@ namespace tools_dotnet.Tests.CrudTest
             var updated = await LoadScopedEntityAsync(seeded.ParentId, seeded.Id);
             updated.Name.ShouldBe("updated");
             updated.UpdatedTimestamp.ShouldNotBe(seeded.UpdatedTimestamp);
+        }
+
+        [Test]
+        public async Task LegacyService_GetAllAsync_ShouldObserveCancellationToken()
+        {
+            await AddTrackedEntityAsync();
+
+            await using var dbContext = CreateDbContext();
+            var service = new ServiceTrackedEntityLegacyService(
+                _mapper,
+                new ServiceTrackedEntityLegacyRepo(dbContext, _mapper, _paginationProcessor),
+                new ServiceTrackedEntityValidator()
+            );
+            using var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            await Should.ThrowAsync<OperationCanceledException>(() =>
+                service.GetAllAsync(cancellationTokenSource.Token)
+            );
+        }
+
+        [Test]
+        public async Task LegacyService_GetAllAsyncPaged_ShouldObserveCancellationToken()
+        {
+            await AddTrackedEntityAsync();
+
+            await using var dbContext = CreateDbContext();
+            var service = new ServiceTrackedEntityLegacyService(
+                _mapper,
+                new ServiceTrackedEntityLegacyRepo(dbContext, _mapper, _paginationProcessor),
+                new ServiceTrackedEntityValidator()
+            );
+            using var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            await Should.ThrowAsync<OperationCanceledException>(() =>
+                service.GetAllAsync(new ApiPagination(), cancellationTokenSource.Token)
+            );
         }
 
         private CrudConcurrencyServiceDbContext CreateDbContext()

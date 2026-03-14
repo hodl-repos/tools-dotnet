@@ -10,26 +10,36 @@ namespace tools_dotnet.Service
         where TDto : class, IDtoWithId<TIdType>
         where TIdType : struct
     {
-        Task<TIdType> AddAsync(TDto item);
+        Task<TIdType> AddAsync(TDto item, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDto>> GetAllAsync();
+        Task<IEnumerable<TDto>> GetAllAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync();
+        Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task<IEnumerable<TDto>> GetAllDeletedAsync();
+        Task<IEnumerable<TDto>> GetAllDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination);
+        Task<IPagedList<TDto>> GetAllAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TDto> GetByIdAsync(TIdType id);
+        Task<TDto> GetByIdAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task<TDto> GetByIdIncludingDeletedAsync(TIdType id);
+        Task<TDto> GetByIdIncludingDeletedAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        );
 
-        Task UpdateAsync(TDto item);
+        Task UpdateAsync(TDto item, CancellationToken cancellationToken = default);
 
-        Task RemoveAsync(TIdType id);
+        Task RemoveAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task RestoreAsync(TIdType id);
+        Task RestoreAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task HardRemoveAsync(TIdType id);
+        Task HardRemoveAsync(TIdType id, CancellationToken cancellationToken = default);
     }
 }

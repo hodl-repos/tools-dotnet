@@ -16,33 +16,48 @@ namespace tools_dotnet.Dao.Crud
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
-        Task<TIdType> AddAsync(TInputDto item);
+        Task<TIdType> AddAsync(TInputDto item, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDto>> GetAllDtoAsync();
+        Task<IEnumerable<TDto>> GetAllDtoAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter);
-
-        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync();
-
-        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filter
+        Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync();
+        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(Expression<Func<TEntity, bool>> filter);
+        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            CancellationToken cancellationToken = default
+        );
+
+        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        );
 
         Task<TDto?> FindDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
-            bool ignoreDeletedWithAuditable = true
+            bool ignoreDeletedWithAuditable = true,
+            CancellationToken cancellationToken = default
         );
 
-        Task UpdateAsync(TInputDto item);
+        Task UpdateAsync(TInputDto item, CancellationToken cancellationToken = default);
 
-        Task<TDto> GetByIdDtoAsync(TIdType id);
+        Task<TDto> GetByIdDtoAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task<TDto> GetByIdDtoIncludingDeletedAsync(TIdType id);
+        Task<TDto> GetByIdDtoIncludingDeletedAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        );
     }
 
     public interface ICrudDtoRepo<TEntity, TIdType, TDto>

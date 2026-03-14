@@ -12,7 +12,11 @@ namespace tools_dotnet.Dao.Crud
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
-        Task UpdateAsync(TInputDto item, TConcurrencyToken concurrencyToken);
+        Task UpdateAsync(
+            TInputDto item,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
     }
 
     public interface IConcurrentCrudDtoRepo<TEntity, TIdType, TDto, TConcurrencyToken>

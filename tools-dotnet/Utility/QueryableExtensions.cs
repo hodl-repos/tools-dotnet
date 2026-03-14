@@ -58,7 +58,8 @@ namespace tools_dotnet.Utility
             this IQueryable<TEntity> query,
             IApiPagination apiPagination,
             IPaginationProcessor paginationProcessor,
-            object[]? paginationFilterParameters = null
+            object[]? paginationFilterParameters = null,
+            CancellationToken cancellationToken = default
         )
         {
             var paginationModel = new PaginationModel()
@@ -76,7 +77,7 @@ namespace tools_dotnet.Utility
                 dataForCustomMethods: paginationFilterParameters
             );
 
-            var itemCount = await query.CountAsync();
+            var itemCount = await query.CountAsync(cancellationToken);
 
             query = paginationProcessor.Apply(
                 paginationModel,
@@ -85,7 +86,7 @@ namespace tools_dotnet.Utility
                 applySorting: false
             );
 
-            var list = await query.ToListAsync();
+            var list = await query.ToListAsync(cancellationToken);
 
             return new PagedList<TEntity>(
                 list,
@@ -105,7 +106,8 @@ namespace tools_dotnet.Utility
             IMapper mapper,
             bool withProjection = true,
             object[]? paginationFilterParameters = null,
-            object? mapperParameters = null
+            object? mapperParameters = null,
+            CancellationToken cancellationToken = default
         )
         {
             var paginationModel = new PaginationModel()
@@ -123,7 +125,7 @@ namespace tools_dotnet.Utility
                 dataForCustomMethods: paginationFilterParameters
             );
 
-            var itemCount = await query.CountAsync();
+            var itemCount = await query.CountAsync(cancellationToken);
 
             query = paginationProcessor.Apply(
                 paginationModel,
@@ -140,16 +142,18 @@ namespace tools_dotnet.Utility
                 {
                     list = await query
                         .ProjectTo<TDto>(mapper.ConfigurationProvider, mapperParameters)
-                        .ToListAsync();
+                        .ToListAsync(cancellationToken);
                 }
                 else
                 {
-                    list = await query.ProjectTo<TDto>(mapper.ConfigurationProvider).ToListAsync();
+                    list = await query
+                        .ProjectTo<TDto>(mapper.ConfigurationProvider)
+                        .ToListAsync(cancellationToken);
                 }
             }
             else
             {
-                list = mapper.Map<List<TDto>>(await query.ToListAsync());
+                list = mapper.Map<List<TDto>>(await query.ToListAsync(cancellationToken));
             }
 
             return new PagedList<TDto>(

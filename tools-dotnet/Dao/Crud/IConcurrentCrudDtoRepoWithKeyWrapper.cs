@@ -20,7 +20,8 @@ namespace tools_dotnet.Dao.Crud
         Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TInputDto item,
-            TConcurrencyToken concurrencyToken
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
         );
     }
 

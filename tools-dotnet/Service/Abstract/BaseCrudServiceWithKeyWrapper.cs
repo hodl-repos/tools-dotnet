@@ -45,74 +45,124 @@ namespace tools_dotnet.Service.Abstract
         /// </summary>
         protected abstract Task SetAndValidateKeyAsync(TDto item, TKeyWrapper keyWrapper);
 
-        public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TDto item)
+        protected virtual Task SetAndValidateKeyAsync(
+            TDto item,
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken
+        )
         {
-            await SetAndValidateKeyAsync(item, keyWrapper);
-
-            await _validator.ValidateAndThrowAsync(item);
-
-            return await _baseRepo.AddAsync(keyWrapper, item);
+            return SetAndValidateKeyAsync(item, keyWrapper);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TKeyWrapper> AddAsync(
+            TKeyWrapper keyWrapper,
+            TDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDtoAsync(keyWrapper.GetContainingResourceFilter());
+            await SetAndValidateKeyAsync(item, keyWrapper, cancellationToken);
+
+            await _validator.ValidateAndThrowAsync(item, cancellationToken);
+
+            return await _baseRepo.AddAsync(keyWrapper, item, cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<IEnumerable<TDto>> GetAllAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDtoIncludingDeletedAsync(
-                keyWrapper.GetContainingResourceFilter()
+            return await _baseRepo.GetAllDtoAsync(
+                keyWrapper.GetContainingResourceFilter(),
+                cancellationToken
             );
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDeletedDtoAsync(keyWrapper.GetContainingResourceFilter());
+            return await _baseRepo.GetAllDtoIncludingDeletedAsync(
+                keyWrapper.GetContainingResourceFilter(),
+                cancellationToken
+            );
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
+        {
+            return await _baseRepo.GetAllDeletedDtoAsync(
+                keyWrapper.GetContainingResourceFilter(),
+                cancellationToken
+            );
         }
 
         public virtual async Task<IPagedList<TDto>> GetAllAsync(
             IApiPagination apiPagination,
-            TKeyWrapper keyWrapper
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
         )
         {
             return await _baseRepo.GetAllDtoAsync(
                 apiPagination,
-                keyWrapper.GetContainingResourceFilter()
+                keyWrapper.GetContainingResourceFilter(),
+                cancellationToken
             );
         }
 
-        public virtual async Task<TDto> GetByIdAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TDto> GetByIdAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetByIdDtoAsync(keyWrapper);
+            return await _baseRepo.GetByIdDtoAsync(keyWrapper, cancellationToken);
         }
 
-        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(keyWrapper);
+            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(keyWrapper, cancellationToken);
         }
 
-        public virtual async Task UpdateAsync(TKeyWrapper keyWrapper, TDto item)
+        public virtual async Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            await SetAndValidateKeyAsync(item, keyWrapper);
+            await SetAndValidateKeyAsync(item, keyWrapper, cancellationToken);
 
-            await _validator.ValidateAndThrowAsync(item);
-            await _baseRepo.UpdateAsync(keyWrapper, item);
+            await _validator.ValidateAndThrowAsync(item, cancellationToken);
+            await _baseRepo.UpdateAsync(keyWrapper, item, cancellationToken);
         }
 
-        public virtual async Task RemoveAsync(TKeyWrapper keyWrapper)
+        public virtual async Task RemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.RemoveAsync(keyWrapper);
+            await _baseRepo.RemoveAsync(keyWrapper, cancellationToken);
         }
 
-        public virtual async Task RestoreAsync(TKeyWrapper keyWrapper)
+        public virtual async Task RestoreAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.RestoreAsync(keyWrapper);
+            await _baseRepo.RestoreAsync(keyWrapper, cancellationToken);
         }
 
-        public virtual async Task HardRemoveAsync(TKeyWrapper keyWrapper)
+        public virtual async Task HardRemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.HardRemoveAsync(keyWrapper);
+            await _baseRepo.HardRemoveAsync(keyWrapper, cancellationToken);
         }
     }
 }

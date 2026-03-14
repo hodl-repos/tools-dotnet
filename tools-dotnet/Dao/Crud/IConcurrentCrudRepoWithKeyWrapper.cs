@@ -8,14 +8,34 @@ namespace tools_dotnet.Dao.Crud
         where TEntity : class
         where TKeyWrapper : class, IKeyWrapper<TEntity>
     {
-        Task UpdateAsync(TKeyWrapper keyWrapper, TEntity item, TConcurrencyToken concurrencyToken);
+        Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TEntity item,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task RemoveAsync(TKeyWrapper keyWrapper, TConcurrencyToken concurrencyToken);
+        Task RemoveAsync(
+            TKeyWrapper keyWrapper,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task RestoreAsync(TKeyWrapper keyWrapper, TConcurrencyToken concurrencyToken);
+        Task RestoreAsync(
+            TKeyWrapper keyWrapper,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task HardRemoveAsync(TKeyWrapper keyWrapper, TConcurrencyToken concurrencyToken);
+        Task HardRemoveAsync(
+            TKeyWrapper keyWrapper,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TConcurrencyToken> GetConcurrencyTokenAsync(TKeyWrapper keyWrapper);
+        Task<TConcurrencyToken> GetConcurrencyTokenAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        );
     }
 }

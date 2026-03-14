@@ -34,7 +34,11 @@ namespace tools_dotnet.Dao.Crud.Impl
                 ?? throw new ArgumentNullException(nameof(concurrencyConfiguration));
         }
 
-        public override async Task UpdateAsync(TKeyWrapper keyWrapper, TEntity item)
+        public override async Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TEntity item,
+            CancellationToken cancellationToken = default
+        )
         {
             var concurrencyToken =
                 CrudConcurrencyHelper.GetRequiredRequestConcurrencyToken<TConcurrencyToken>(
@@ -42,16 +46,20 @@ namespace tools_dotnet.Dao.Crud.Impl
                     item
                 );
 
-            await UpdateAsync(keyWrapper, item, concurrencyToken);
+            await UpdateAsync(keyWrapper, item, concurrencyToken, cancellationToken);
         }
 
         public virtual async Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TEntity item,
-            TConcurrencyToken concurrencyToken
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
         )
         {
-            var dbEntity = await GetByIdInternalAsync(keyWrapper);
+            var dbEntity = await GetByIdInternalAsync(
+                keyWrapper,
+                cancellationToken: cancellationToken
+            );
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 dbEntity,
@@ -63,14 +71,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
                     _concurrencyConfiguration,
                     ex,
-                    concurrencyToken
+                    concurrencyToken,
+                    cancellationToken
                 );
             }
             catch (DbUpdateException ex)
@@ -80,21 +89,30 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public override Task RemoveAsync(TKeyWrapper keyWrapper)
+        public override Task RemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
             throw new InvalidOperationException(
                 $"Use {nameof(RemoveAsync)}({nameof(keyWrapper)}, concurrencyToken) on concurrency-aware repos."
             );
         }
 
-        public override Task RestoreAsync(TKeyWrapper keyWrapper)
+        public override Task RestoreAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
             throw new InvalidOperationException(
                 $"Use {nameof(RestoreAsync)}({nameof(keyWrapper)}, concurrencyToken) on concurrency-aware repos."
             );
         }
 
-        public override Task HardRemoveAsync(TKeyWrapper keyWrapper)
+        public override Task HardRemoveAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
             throw new InvalidOperationException(
                 $"Use {nameof(HardRemoveAsync)}({nameof(keyWrapper)}, concurrencyToken) on concurrency-aware repos."
@@ -103,10 +121,14 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task RemoveAsync(
             TKeyWrapper keyWrapper,
-            TConcurrencyToken concurrencyToken
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
         )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper);
+            var entity = await GetByIdInternalAsync(
+                keyWrapper,
+                cancellationToken: cancellationToken
+            );
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 entity,
@@ -126,14 +148,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
                     _concurrencyConfiguration,
                     ex,
-                    concurrencyToken
+                    concurrencyToken,
+                    cancellationToken
                 );
             }
             catch (DbUpdateException ex)
@@ -145,10 +168,11 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task RestoreAsync(
             TKeyWrapper keyWrapper,
-            TConcurrencyToken concurrencyToken
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
         )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper, false);
+            var entity = await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 entity,
@@ -171,14 +195,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
                     _concurrencyConfiguration,
                     ex,
-                    concurrencyToken
+                    concurrencyToken,
+                    cancellationToken
                 );
             }
             catch (DbUpdateException ex)
@@ -190,10 +215,11 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task HardRemoveAsync(
             TKeyWrapper keyWrapper,
-            TConcurrencyToken concurrencyToken
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
         )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper, false);
+            var entity = await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 entity,
@@ -204,14 +230,15 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
                     _concurrencyConfiguration,
                     ex,
-                    concurrencyToken
+                    concurrencyToken,
+                    cancellationToken
                 );
             }
             catch (DbUpdateException ex)
@@ -221,11 +248,14 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public virtual async Task<TConcurrencyToken> GetConcurrencyTokenAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TConcurrencyToken> GetConcurrencyTokenAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
             var entity = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(keyWrapper.GetKeyFilter());
+                .FirstOrDefaultAsync(keyWrapper.GetKeyFilter(), cancellationToken);
 
             if (entity == null)
             {

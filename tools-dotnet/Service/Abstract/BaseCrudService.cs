@@ -29,63 +29,93 @@ namespace tools_dotnet.Service.Abstract
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         }
 
-        public virtual async Task<TIdType> AddAsync(TDto item)
+        public virtual async Task<TIdType> AddAsync(
+            TDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _validator.ValidateAndThrowAsync(item);
+            await _validator.ValidateAndThrowAsync(item, cancellationToken);
 
-            return await _baseRepo.AddAsync(item);
+            return await _baseRepo.AddAsync(item, cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllAsync(
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDtoAsync();
+            return await _baseRepo.GetAllDtoAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDtoIncludingDeletedAsync();
+            return await _baseRepo.GetAllDtoIncludingDeletedAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDeletedDtoAsync();
+            return await _baseRepo.GetAllDeletedDtoAsync(cancellationToken);
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination)
+        public virtual async Task<IPagedList<TDto>> GetAllAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetAllDtoAsync(apiPagination);
+            return await _baseRepo.GetAllDtoAsync(apiPagination, cancellationToken);
         }
 
-        public virtual async Task<TDto> GetByIdAsync(TIdType id)
+        public virtual async Task<TDto> GetByIdAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetByIdDtoAsync(id);
+            return await _baseRepo.GetByIdDtoAsync(id, cancellationToken);
         }
 
-        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(TIdType id)
+        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id);
+            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id, cancellationToken);
         }
 
-        public virtual async Task RemoveAsync(TIdType id)
+        public virtual async Task RemoveAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.RemoveAsync(id);
+            await _baseRepo.RemoveAsync(id, cancellationToken);
         }
 
-        public virtual async Task RestoreAsync(TIdType id)
+        public virtual async Task RestoreAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.RestoreAsync(id);
+            await _baseRepo.RestoreAsync(id, cancellationToken);
         }
 
-        public virtual async Task HardRemoveAsync(TIdType id)
+        public virtual async Task HardRemoveAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _baseRepo.HardRemoveAsync(id);
+            await _baseRepo.HardRemoveAsync(id, cancellationToken);
         }
 
-        public virtual async Task UpdateAsync(TDto item)
+        public virtual async Task UpdateAsync(
+            TDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            await _validator.ValidateAndThrowAsync(item);
+            await _validator.ValidateAndThrowAsync(item, cancellationToken);
 
-            await _baseRepo.UpdateAsync(item);
+            await _baseRepo.UpdateAsync(item, cancellationToken);
         }
     }
 }

@@ -8,14 +8,33 @@ namespace tools_dotnet.Service
         where TDto : class, IDtoWithId<TIdType>
         where TIdType : struct
     {
-        Task UpdateAsync(TDto item, TConcurrencyToken concurrencyToken);
+        Task UpdateAsync(
+            TDto item,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task RemoveAsync(TIdType id, TConcurrencyToken concurrencyToken);
+        Task RemoveAsync(
+            TIdType id,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task RestoreAsync(TIdType id, TConcurrencyToken concurrencyToken);
+        Task RestoreAsync(
+            TIdType id,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task HardRemoveAsync(TIdType id, TConcurrencyToken concurrencyToken);
+        Task HardRemoveAsync(
+            TIdType id,
+            TConcurrencyToken concurrencyToken,
+            CancellationToken cancellationToken = default
+        );
 
-        Task<TConcurrencyToken> GetConcurrencyTokenAsync(TIdType id);
+        Task<TConcurrencyToken> GetConcurrencyTokenAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        );
     }
 }

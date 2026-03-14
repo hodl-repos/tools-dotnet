@@ -30,45 +30,55 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor) { }
 
-        public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item)
+        public virtual async Task<TKeyWrapper> AddAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
             var entity = _mapper.Map<TEntity>(item);
 
-            return await AddAsync(keyWrapper, entity);
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync()
-        {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>())
-                .AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync()
-        {
-            return await SetupQueryModifications(
-                    _dbContext.Set<TEntity>(),
-                    SoftDeleteQueryMode.IncludeDeleted
-                )
-                .AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+            return await AddAsync(keyWrapper, entity, cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
-            Expression<Func<TEntity, bool>> filter
+            CancellationToken cancellationToken = default
+        )
+        {
+            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync(cancellationToken);
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        )
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted
+                )
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync(cancellationToken);
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .Where(filter)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             return await SetupQueryModifications(
@@ -78,10 +88,12 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .Where(filter)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            CancellationToken cancellationToken = default
+        )
         {
             return await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
@@ -89,11 +101,12 @@ namespace tools_dotnet.Dao.Crud.Impl
                 )
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             return await SetupQueryModifications(
@@ -103,23 +116,28 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .Where(filter)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiPagination apiPagination)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
 
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
                 apiPagination,
                 _paginationProcessor,
-                _mapper
+                _mapper,
+                cancellationToken: cancellationToken
             );
         }
 
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
-            Expression<Func<TEntity, bool>> filter
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
         )
         {
             var query = SetupQueryModifications(_dbContext.Set<TEntity>())
@@ -129,17 +147,21 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
                 apiPagination,
                 _paginationProcessor,
-                _mapper
+                _mapper,
+                cancellationToken: cancellationToken
             );
         }
 
-        public virtual async Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TDto> GetByIdDtoAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
             var dto = await SetupQueryModifications(_dbContext.Set<TEntity>())
                 .AsNoTracking()
                 .Where(keyWrapper.GetKeyFilter())
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
             {
@@ -149,7 +171,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
-        public virtual async Task<TDto> GetByIdDtoIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TDto> GetByIdDtoIncludingDeletedAsync(
+            TKeyWrapper keyWrapper,
+            CancellationToken cancellationToken = default
+        )
         {
             var dto = await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
@@ -158,7 +183,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .AsNoTracking()
                 .Where(keyWrapper.GetKeyFilter())
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
             {
@@ -168,14 +193,21 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
-        public virtual async Task UpdateAsync(TKeyWrapper keyWrapper, TInputDto item)
+        public virtual async Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dbEntity = await GetByIdInternalAsync(keyWrapper);
+            var dbEntity = await GetByIdInternalAsync(
+                keyWrapper,
+                cancellationToken: cancellationToken
+            );
             _mapper.Map(item, dbEntity);
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {

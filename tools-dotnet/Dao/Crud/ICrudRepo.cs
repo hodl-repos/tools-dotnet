@@ -11,38 +11,53 @@ namespace tools_dotnet.Dao.Crud
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
     {
-        Task<TIdType> AddAsync(TEntity item);
+        Task<TIdType> AddAsync(TEntity item, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TEntity>> GetAllAsync();
+        Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters);
-
-        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync();
-
-        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filters
+        Task<IEnumerable<TEntity>> GetAllAsync(
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TEntity>> GetAllDeletedAsync();
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
 
-        Task<IEnumerable<TEntity>> GetAllDeletedAsync(Expression<Func<TEntity, bool>> filters);
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync(
+            CancellationToken cancellationToken = default
+        );
+
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync(
+            Expression<Func<TEntity, bool>> filters,
+            CancellationToken cancellationToken = default
+        );
 
         Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
-            bool ignoreDeletedWithAuditable = true
+            bool ignoreDeletedWithAuditable = true,
+            CancellationToken cancellationToken = default
         );
 
-        Task<TEntity> GetByIdAsync(TIdType id);
+        Task<TEntity> GetByIdAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task<TEntity> GetByIdIncludingDeletedAsync(TIdType id);
+        Task<TEntity> GetByIdIncludingDeletedAsync(
+            TIdType id,
+            CancellationToken cancellationToken = default
+        );
 
-        Task UpdateAsync(TEntity item);
+        Task UpdateAsync(TEntity item, CancellationToken cancellationToken = default);
 
-        Task RemoveAsync(TIdType id);
+        Task RemoveAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task RestoreAsync(TIdType id);
+        Task RestoreAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task HardRemoveAsync(TIdType id);
+        Task HardRemoveAsync(TIdType id, CancellationToken cancellationToken = default);
     }
 }
