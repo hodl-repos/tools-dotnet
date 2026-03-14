@@ -72,6 +72,112 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
+        public async Task UpdateAsync_ShouldPreserveCreatedTimestamp_ForLegacyEntityRepo()
+        {
+            var seeded = await AddTrackedEntityAsync();
+            var forgedCreatedTimestamp = seeded.CreatedTimestamp.AddDays(7);
+            await Task.Delay(10);
+
+            await using var dbContext = CreateDbContext();
+            var repo = new LegacyTrackedEntityRepo(dbContext, _mapper, _paginationProcessor);
+
+            await repo.UpdateAsync(
+                new TrackedEntity
+                {
+                    Id = seeded.Id,
+                    Name = "updated",
+                    CreatedTimestamp = forgedCreatedTimestamp,
+                    UpdatedTimestamp = seeded.UpdatedTimestamp
+                }
+            );
+
+            var updated = await LoadTrackedEntityAsync(seeded.Id);
+            updated.Name.ShouldBe("updated");
+            updated.CreatedTimestamp.ShouldBe(seeded.CreatedTimestamp);
+        }
+
+        [Test]
+        public async Task UpdateAsync_ShouldPreserveCreatedTimestamp_ForLegacyDtoRepo()
+        {
+            var seeded = await AddTrackedEntityAsync();
+            var forgedCreatedTimestamp = seeded.CreatedTimestamp.AddDays(7);
+            await Task.Delay(10);
+
+            await using var dbContext = CreateDbContext();
+            var repo = new LegacyTrackedEntityDtoRepo(dbContext, _mapper, _paginationProcessor);
+
+            await repo.UpdateAsync(
+                new TrackedEntityInputDto
+                {
+                    Id = seeded.Id,
+                    Name = "updated",
+                    CreatedTimestamp = forgedCreatedTimestamp,
+                    UpdatedTimestamp = seeded.UpdatedTimestamp
+                }
+            );
+
+            var updated = await LoadTrackedEntityAsync(seeded.Id);
+            updated.Name.ShouldBe("updated");
+            updated.CreatedTimestamp.ShouldBe(seeded.CreatedTimestamp);
+        }
+
+        [Test]
+        public async Task UpdateAsync_ShouldPreserveCreatedTimestamp_ForLegacyKeyWrapperRepo()
+        {
+            var seeded = await AddKeyWrappedEntityAsync();
+            var forgedCreatedTimestamp = seeded.CreatedTimestamp.AddDays(7);
+            var keyWrapper = new ScopedKeyWrapper(seeded.ParentId, seeded.Id);
+            await Task.Delay(10);
+
+            await using var dbContext = CreateDbContext();
+            var repo = new LegacyKeyWrappedEntityRepo(dbContext, _mapper, _paginationProcessor);
+
+            await repo.UpdateAsync(
+                keyWrapper,
+                new KeyWrappedEntity
+                {
+                    Id = seeded.Id,
+                    ParentId = seeded.ParentId,
+                    Name = "updated",
+                    CreatedTimestamp = forgedCreatedTimestamp,
+                    UpdatedTimestamp = seeded.UpdatedTimestamp
+                }
+            );
+
+            var updated = await LoadKeyWrappedEntityAsync(seeded.ParentId, seeded.Id);
+            updated.Name.ShouldBe("updated");
+            updated.CreatedTimestamp.ShouldBe(seeded.CreatedTimestamp);
+        }
+
+        [Test]
+        public async Task UpdateAsync_ShouldPreserveCreatedTimestamp_ForLegacyKeyWrapperDtoRepo()
+        {
+            var seeded = await AddKeyWrappedEntityAsync();
+            var forgedCreatedTimestamp = seeded.CreatedTimestamp.AddDays(7);
+            var keyWrapper = new ScopedKeyWrapper(seeded.ParentId, seeded.Id);
+            await Task.Delay(10);
+
+            await using var dbContext = CreateDbContext();
+            var repo = new LegacyKeyWrappedEntityDtoRepo(dbContext, _mapper, _paginationProcessor);
+
+            await repo.UpdateAsync(
+                keyWrapper,
+                new KeyWrappedEntityInputDto
+                {
+                    Id = seeded.Id,
+                    ParentId = seeded.ParentId,
+                    Name = "updated",
+                    CreatedTimestamp = forgedCreatedTimestamp,
+                    UpdatedTimestamp = seeded.UpdatedTimestamp
+                }
+            );
+
+            var updated = await LoadKeyWrappedEntityAsync(seeded.ParentId, seeded.Id);
+            updated.Name.ShouldBe("updated");
+            updated.CreatedTimestamp.ShouldBe(seeded.CreatedTimestamp);
+        }
+
+        [Test]
         public async Task UpdateAsync_ShouldThrow_WhenEntityTimestampIsStale()
         {
             var seeded = await AddTrackedEntityAsync();
@@ -507,6 +613,17 @@ namespace tools_dotnet.Tests.CrudTest
                 ) { }
         }
 
+        private sealed class LegacyTrackedEntityDtoRepo
+            : BaseCrudDtoRepo<TrackedEntity, int, TrackedEntityDto, TrackedEntityInputDto>
+        {
+            public LegacyTrackedEntityDtoRepo(
+                DbContext dbContext,
+                IMapper mapper,
+                IPaginationProcessor paginationProcessor
+            )
+                : base(dbContext, mapper, paginationProcessor) { }
+        }
+
         private sealed class TrackedEntityDtoRepo
             : BaseConcurrentCrudDtoRepo<
                 TrackedEntity,
@@ -557,6 +674,17 @@ namespace tools_dotnet.Tests.CrudTest
                 ) { }
         }
 
+        private sealed class LegacyKeyWrappedEntityRepo
+            : BaseCrudRepoWithKeyWrapper<KeyWrappedEntity, ScopedKeyWrapper>
+        {
+            public LegacyKeyWrappedEntityRepo(
+                DbContext dbContext,
+                IMapper mapper,
+                IPaginationProcessor paginationProcessor
+            )
+                : base(dbContext, mapper, paginationProcessor) { }
+        }
+
         private sealed class KeyWrappedEntityRepo
             : BaseConcurrentCrudRepoWithKeyWrapper<
                 KeyWrappedEntity,
@@ -578,6 +706,22 @@ namespace tools_dotnet.Tests.CrudTest
                         nameof(KeyWrappedEntity.UpdatedTimestamp)
                     )
                 ) { }
+        }
+
+        private sealed class LegacyKeyWrappedEntityDtoRepo
+            : BaseCrudDtoRepoWithKeyWrapper<
+                KeyWrappedEntity,
+                ScopedKeyWrapper,
+                KeyWrappedEntityDto,
+                KeyWrappedEntityInputDto
+            >
+        {
+            public LegacyKeyWrappedEntityDtoRepo(
+                DbContext dbContext,
+                IMapper mapper,
+                IPaginationProcessor paginationProcessor
+            )
+                : base(dbContext, mapper, paginationProcessor) { }
         }
 
         private sealed class KeyWrappedEntityDtoRepo

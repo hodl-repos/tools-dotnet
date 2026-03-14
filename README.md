@@ -296,6 +296,9 @@ Base services call FluentValidation before `Add`/`Update`.
 - `TimestampsInterceptor` to auto-populate created/updated timestamps in EF Core `SaveChanges`.
 - `IKeyWrapper<TEntity>` for nested-resource key handling and scoped filtering.
 
+`CreatedTimestamp` is treated as immutable after insert.
+On update, incoming `CreatedTimestamp` values are ignored and the original stored value is preserved; only `UpdatedTimestamp` is advanced.
+
 ### Optimistic concurrency
 
 The concurrency-aware CRUD variants add optimistic concurrency using a configurable token:

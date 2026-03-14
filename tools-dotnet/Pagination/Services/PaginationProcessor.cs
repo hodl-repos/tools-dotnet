@@ -14,7 +14,7 @@ namespace tools_dotnet.Pagination.Services
     /// <summary>
     /// Applies filtering, sorting, and pagination to an <see cref="IQueryable{T}"/>.
     /// </summary>
-    public class PaginationProcessor : IPaginationProcessor
+    public class PaginationProcessor : IPaginationProcessor, IDeserializedPaginationProcessor
     {
         private static readonly MethodInfo OrderByMethod = GetOrderMethod(
             nameof(Queryable.OrderBy)
@@ -89,27 +89,79 @@ namespace tools_dotnet.Pagination.Services
                 throw new ArgumentNullException(nameof(model));
             }
 
+            return ApplyInternal(
+                Deserialize(model),
+                source,
+                dataForCustomMethods,
+                applyFiltering,
+                applySorting,
+                applyPagination
+            );
+        }
+
+        DeserializedPaginationModel IDeserializedPaginationProcessor.Deserialize(PaginationModel model)
+        {
+            return Deserialize(model);
+        }
+
+        IQueryable<TEntity> IDeserializedPaginationProcessor.Apply<TEntity>(
+            DeserializedPaginationModel model,
+            IQueryable<TEntity> source,
+            object[]? dataForCustomMethods,
+            bool applyFiltering,
+            bool applySorting,
+            bool applyPagination
+        )
+        {
+            return ApplyInternal(
+                model,
+                source,
+                dataForCustomMethods,
+                applyFiltering,
+                applySorting,
+                applyPagination
+            );
+        }
+
+        private DeserializedPaginationModel Deserialize(PaginationModel model)
+        {
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
+
+            return _deserializer.Deserialize(model);
+        }
+
+        private IQueryable<TEntity> ApplyInternal<TEntity>(
+            DeserializedPaginationModel model,
+            IQueryable<TEntity> source,
+            object[]? dataForCustomMethods,
+            bool applyFiltering,
+            bool applySorting,
+            bool applyPagination
+        )
+        {
             if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            var deserializedModel = _deserializer.Deserialize(model);
             var query = source;
 
             if (applyFiltering)
             {
-                query = ApplyFilters(query, deserializedModel.Filters, dataForCustomMethods);
+                query = ApplyFilters(query, model.Filters, dataForCustomMethods);
             }
 
             if (applySorting)
             {
-                query = ApplySorts(query, deserializedModel.Sorts, dataForCustomMethods);
+                query = ApplySorts(query, model.Sorts, dataForCustomMethods);
             }
 
             if (applyPagination)
             {
-                query = ApplyPagination(query, deserializedModel.Page, deserializedModel.PageSize);
+                query = ApplyPagination(query, model.Page, model.PageSize);
             }
 
             return query;

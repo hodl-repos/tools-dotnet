@@ -13,6 +13,17 @@ namespace tools_dotnet.Utility
 {
     public static class QueryableExtensions
     {
+        private static PaginationModel CreatePaginationModel(IApiPagination apiPagination)
+        {
+            return new PaginationModel()
+            {
+                Filters = apiPagination.Filters,
+                Sorts = apiPagination.Sorts,
+                Page = apiPagination.Page,
+                PageSize = apiPagination.PageSize,
+            };
+        }
+
         public static IPagedList<T> SortFilterAndPage<T>(
             this IQueryable<T> query,
             IApiPagination apiPagination,
@@ -20,13 +31,38 @@ namespace tools_dotnet.Utility
             object[]? paginationFilterParameters = null
         )
         {
-            var paginationModel = new PaginationModel()
+            var paginationModel = CreatePaginationModel(apiPagination);
+            var optimizedProcessor = paginationProcessor as IDeserializedPaginationProcessor;
+
+            if (optimizedProcessor != null)
             {
-                Filters = apiPagination.Filters,
-                Sorts = apiPagination.Sorts,
-                Page = apiPagination.Page,
-                PageSize = apiPagination.PageSize,
-            };
+                var deserializedModel = optimizedProcessor.Deserialize(paginationModel);
+
+                query = optimizedProcessor.Apply(
+                    deserializedModel,
+                    query,
+                    applyPagination: false,
+                    dataForCustomMethods: paginationFilterParameters
+                );
+
+                var optimizedItemCount = query.Count();
+
+                query = optimizedProcessor.Apply(
+                    deserializedModel,
+                    query,
+                    applyFiltering: false,
+                    applySorting: false
+                );
+
+                var optimizedList = query.ToList();
+
+                return new PagedList<T>(
+                    optimizedList,
+                    apiPagination.Page ?? 1,
+                    apiPagination.PageSize,
+                    optimizedItemCount
+                );
+            }
 
             query = paginationProcessor.Apply(
                 paginationModel,
@@ -62,13 +98,38 @@ namespace tools_dotnet.Utility
             CancellationToken cancellationToken = default
         )
         {
-            var paginationModel = new PaginationModel()
+            var paginationModel = CreatePaginationModel(apiPagination);
+            var optimizedProcessor = paginationProcessor as IDeserializedPaginationProcessor;
+
+            if (optimizedProcessor != null)
             {
-                Filters = apiPagination.Filters,
-                Sorts = apiPagination.Sorts,
-                Page = apiPagination.Page,
-                PageSize = apiPagination.PageSize,
-            };
+                var deserializedModel = optimizedProcessor.Deserialize(paginationModel);
+
+                query = optimizedProcessor.Apply(
+                    deserializedModel,
+                    query,
+                    applyPagination: false,
+                    dataForCustomMethods: paginationFilterParameters
+                );
+
+                var optimizedItemCount = await query.CountAsync(cancellationToken);
+
+                query = optimizedProcessor.Apply(
+                    deserializedModel,
+                    query,
+                    applyFiltering: false,
+                    applySorting: false
+                );
+
+                var optimizedList = await query.ToListAsync(cancellationToken);
+
+                return new PagedList<TEntity>(
+                    optimizedList,
+                    apiPagination.Page ?? 1,
+                    apiPagination.PageSize,
+                    optimizedItemCount
+                );
+            }
 
             query = paginationProcessor.Apply(
                 paginationModel,
@@ -110,13 +171,39 @@ namespace tools_dotnet.Utility
             CancellationToken cancellationToken = default
         )
         {
-            var paginationModel = new PaginationModel()
+            var paginationModel = CreatePaginationModel(apiPagination);
+            var optimizedProcessor = paginationProcessor as IDeserializedPaginationProcessor;
+
+            if (optimizedProcessor != null)
             {
-                Filters = apiPagination.Filters,
-                Sorts = apiPagination.Sorts,
-                Page = apiPagination.Page,
-                PageSize = apiPagination.PageSize,
-            };
+                var deserializedModel = optimizedProcessor.Deserialize(paginationModel);
+
+                query = optimizedProcessor.Apply(
+                    deserializedModel,
+                    query,
+                    applyPagination: false,
+                    dataForCustomMethods: paginationFilterParameters
+                );
+
+                var optimizedItemCount = await query.CountAsync(cancellationToken);
+
+                query = optimizedProcessor.Apply(
+                    deserializedModel,
+                    query,
+                    applyFiltering: false,
+                    applySorting: false
+                );
+
+                return await CreateProjectedPagedListAsync<TEntity, TDto>(
+                    query,
+                    apiPagination,
+                    mapper,
+                    withProjection,
+                    mapperParameters,
+                    optimizedItemCount,
+                    cancellationToken
+                );
+            }
 
             query = paginationProcessor.Apply(
                 paginationModel,
@@ -134,6 +221,27 @@ namespace tools_dotnet.Utility
                 applySorting: false
             );
 
+            return await CreateProjectedPagedListAsync<TEntity, TDto>(
+                query,
+                apiPagination,
+                mapper,
+                withProjection,
+                mapperParameters,
+                itemCount,
+                cancellationToken
+            );
+        }
+
+        private static async Task<IPagedList<TDto>> CreateProjectedPagedListAsync<TEntity, TDto>(
+            IQueryable<TEntity> query,
+            IApiPagination apiPagination,
+            IMapper mapper,
+            bool withProjection,
+            object? mapperParameters,
+            int itemCount,
+            CancellationToken cancellationToken
+        )
+        {
             List<TDto> list;
 
             if (withProjection)

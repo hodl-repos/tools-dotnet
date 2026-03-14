@@ -46,17 +46,42 @@ namespace tools_dotnet.Dao.Interceptors
                     && (e.State == EntityState.Added || e.State == EntityState.Modified)
                 );
 
+            var now = DateTimeOffset.UtcNow;
+
             foreach (var entityEntry in entries)
             {
-                ((IChangeTrackingEntity)entityEntry.Entity).UpdatedTimestamp =
-                    DateTimeOffset.UtcNow;
+                var entity = (IChangeTrackingEntity)entityEntry.Entity;
 
                 if (entityEntry.State == EntityState.Added)
                 {
-                    ((IChangeTrackingEntity)entityEntry.Entity).CreatedTimestamp =
-                        DateTimeOffset.UtcNow;
+                    entity.CreatedTimestamp = now;
+                    entity.UpdatedTimestamp = now;
+                    continue;
                 }
+
+                PreserveCreatedTimestamp(entityEntry, entity);
+                entity.UpdatedTimestamp = now;
             }
+        }
+
+        private static void PreserveCreatedTimestamp(
+            EntityEntry entityEntry,
+            IChangeTrackingEntity entity
+        )
+        {
+            if (entityEntry.Metadata.FindProperty(nameof(IChangeTrackingEntity.CreatedTimestamp)) == null)
+            {
+                return;
+            }
+
+            var createdTimestampProperty = entityEntry.Property(
+                nameof(IChangeTrackingEntity.CreatedTimestamp)
+            );
+            var originalCreatedTimestamp = (DateTimeOffset)createdTimestampProperty.OriginalValue!;
+
+            createdTimestampProperty.CurrentValue = originalCreatedTimestamp;
+            createdTimestampProperty.IsModified = false;
+            entity.CreatedTimestamp = originalCreatedTimestamp;
         }
     }
 }

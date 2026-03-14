@@ -49,8 +49,6 @@ namespace tools_dotnet.Utility
                 // Flush the response to send data to the client immediately
                 await response.Body.FlushAsync();
             }
-
-            response.Body.Close();
         }
     }
 }
