@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using tools_dotnet.Dao.KeyWrapper;
 using tools_dotnet.Dao.Paging;
+using tools_dotnet.Paging;
 
 namespace tools_dotnet.Dao.Crud
 {
@@ -17,38 +18,33 @@ namespace tools_dotnet.Dao.Crud
             CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<TEntity>> GetAllAsync(
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        );
 
         Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+        Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+        Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filters,
-            CancellationToken cancellationToken = default
-        );
-
-        Task<IEnumerable<TEntity>> GetAllDeletedAsync(
-            CancellationToken cancellationToken = default
-        );
-
-        Task<IEnumerable<TEntity>> GetAllDeletedAsync(
-            Expression<Func<TEntity, bool>> filters,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<TEntity> GetByIdAsync(
             TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        );
-
-        Task<TEntity> GetByIdIncludingDeletedAsync(
-            TKeyWrapper keyWrapper,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 

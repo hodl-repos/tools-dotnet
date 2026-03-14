@@ -257,19 +257,22 @@ For `IAuditableEntity` types, the default read APIs now stay on the active view:
 - `GetAllAsync(...)` and `GetByIdAsync(...)` exclude soft-deleted rows.
 - `RemoveAsync(...)` performs a soft delete.
 
-Use the explicit lifecycle APIs when you need administrative access to deleted rows:
+Use `SoftDeleteQueryMode` on repo read APIs when you need administrative access to deleted rows:
 
-- `GetAllIncludingDeletedAsync(...)`
-- `GetAllDeletedAsync(...)`
-- `GetByIdIncludingDeletedAsync(...)`
+- `GetAllAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`
+- `GetAllAsync(SoftDeleteQueryMode.DeletedOnly, ...)`
+- `GetByIdAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`
+- `GetAllDtoAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`
+- `GetAllDtoAsync(SoftDeleteQueryMode.DeletedOnly, ...)`
+- `GetByIdDtoAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`
+
+The restore and hard-delete lifecycle stays explicit:
+
 - `RestoreAsync(...)`
 - `HardRemoveAsync(...)`
 
-The DTO repos/services expose the same lifecycle through their DTO-shaped methods:
-
-- `GetAllDtoIncludingDeletedAsync(...)`
-- `GetAllDeletedDtoAsync(...)`
-- `GetByIdDtoIncludingDeletedAsync(...)`
+The service layer still exposes convenience methods like `GetAllIncludingDeletedAsync(...)` and
+`GetAllDeletedAsync(...)`, but those now delegate to the repo-level `SoftDeleteQueryMode` APIs.
 
 Concurrency-aware repos and services also expose token-aware `RestoreAsync(...)` and `HardRemoveAsync(...)` overloads.
 

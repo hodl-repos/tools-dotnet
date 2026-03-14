@@ -74,7 +74,7 @@ namespace tools_dotnet.Service.Abstract
         {
             return await _baseRepo.GetAllDtoAsync(
                 keyWrapper.GetContainingResourceFilter(),
-                cancellationToken
+                cancellationToken: cancellationToken
             );
         }
 
@@ -83,8 +83,9 @@ namespace tools_dotnet.Service.Abstract
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetAllDtoIncludingDeletedAsync(
+            return await _baseRepo.GetAllDtoAsync(
                 keyWrapper.GetContainingResourceFilter(),
+                SoftDeleteQueryMode.IncludeDeleted,
                 cancellationToken
             );
         }
@@ -94,8 +95,9 @@ namespace tools_dotnet.Service.Abstract
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetAllDeletedDtoAsync(
+            return await _baseRepo.GetAllDtoAsync(
                 keyWrapper.GetContainingResourceFilter(),
+                SoftDeleteQueryMode.DeletedOnly,
                 cancellationToken
             );
         }
@@ -109,7 +111,7 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetAllDtoAsync(
                 apiPagination,
                 keyWrapper.GetContainingResourceFilter(),
-                cancellationToken
+                cancellationToken: cancellationToken
             );
         }
 
@@ -118,7 +120,7 @@ namespace tools_dotnet.Service.Abstract
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetByIdDtoAsync(keyWrapper, cancellationToken);
+            return await _baseRepo.GetByIdDtoAsync(keyWrapper, cancellationToken: cancellationToken);
         }
 
         public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
@@ -126,7 +128,11 @@ namespace tools_dotnet.Service.Abstract
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(keyWrapper, cancellationToken);
+            return await _baseRepo.GetByIdDtoAsync(
+                keyWrapper,
+                SoftDeleteQueryMode.IncludeDeleted,
+                cancellationToken
+            );
         }
 
         public virtual async Task UpdateAsync(

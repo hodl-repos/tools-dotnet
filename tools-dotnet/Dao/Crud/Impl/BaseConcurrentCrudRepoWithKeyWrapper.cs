@@ -172,7 +172,11 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
+            var entity = await GetByIdInternalAsync(
+                keyWrapper,
+                SoftDeleteQueryMode.IncludeDeleted,
+                cancellationToken
+            );
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 entity,
@@ -219,7 +223,11 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            var entity = await GetByIdInternalAsync(keyWrapper, false, cancellationToken);
+            var entity = await GetByIdInternalAsync(
+                keyWrapper,
+                SoftDeleteQueryMode.IncludeDeleted,
+                cancellationToken
+            );
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 entity,
@@ -253,7 +261,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            var entity = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
+            var entity = await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted
+                )
                 .AsNoTracking()
                 .FirstOrDefaultAsync(keyWrapper.GetKeyFilter(), cancellationToken);
 

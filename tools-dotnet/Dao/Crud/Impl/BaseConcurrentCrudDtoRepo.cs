@@ -47,23 +47,11 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>())
-                .AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync(cancellationToken);
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await SetupQueryModifications(
-                    _dbContext.Set<TEntity>(),
-                    SoftDeleteQueryMode.IncludeDeleted
-                )
+            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
                 .ToListAsync(cancellationToken);
@@ -71,56 +59,11 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
-
-            return await query
-                .Where(filter)
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync(cancellationToken);
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
-            Expression<Func<TEntity, bool>> filter,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var query = SetupQueryModifications(
-                    _dbContext.Set<TEntity>(),
-                    SoftDeleteQueryMode.IncludeDeleted
-                )
-                .AsNoTracking();
-
-            return await query
-                .Where(filter)
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync(cancellationToken);
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await SetupQueryModifications(
-                    _dbContext.Set<TEntity>(),
-                    SoftDeleteQueryMode.DeletedOnly
-                )
-                .AsNoTracking()
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync(cancellationToken);
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
-            Expression<Func<TEntity, bool>> filter,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var query = SetupQueryModifications(
-                    _dbContext.Set<TEntity>(),
-                    SoftDeleteQueryMode.DeletedOnly
-                )
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking();
 
             return await query
@@ -134,7 +77,21 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
+            return await GetAllDtoAsync(
+                apiPagination,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+                .AsNoTracking();
 
             return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
                 apiPagination,
@@ -150,7 +107,22 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+            return await GetAllDtoAsync(
+                apiPagination,
+                filter,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .Where(filter);
 
@@ -165,14 +137,11 @@ namespace tools_dotnet.Dao.Crud.Impl
         public virtual async Task<TDto?> FindDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
-            bool ignoreDeletedWithAuditable = true,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            var query = SetupQueryModifications(
-                    _dbContext.Set<TEntity>(),
-                    ignoreDeletedWithAuditable
-                )
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider);
@@ -187,31 +156,13 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<TDto> GetByIdDtoAsync(
             TIdType id,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>())
-                .AsNoTracking()
-                .Where(e => e.Id.Equals(id))
-                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (dto == null)
-            {
-                throw ItemNotFoundException.Create(nameof(TEntity), id);
-            }
-
-            return dto;
-        }
-
-        public virtual async Task<TDto> GetByIdDtoIncludingDeletedAsync(
-            TIdType id,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
             var dto = await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
-                    SoftDeleteQueryMode.IncludeDeleted
+                    softDeleteQueryMode
                 )
                 .AsNoTracking()
                 .Where(e => e.Id.Equals(id))
@@ -246,7 +197,11 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            var dbEntity = await GetByIdAsync(item.Id, cancellationToken);
+            var dbEntity = await GetByIdAsync(
+                item.Id,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,
                 dbEntity,

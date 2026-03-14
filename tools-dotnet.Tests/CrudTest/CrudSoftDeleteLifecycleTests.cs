@@ -59,7 +59,10 @@ namespace tools_dotnet.Tests.CrudTest
 
             await Should.ThrowAsync<ItemNotFoundException>(() => repoAfterDelete.GetByIdAsync(seeded.Id));
 
-            var deleted = await repoAfterDelete.GetByIdIncludingDeletedAsync(seeded.Id);
+            var deleted = await repoAfterDelete.GetByIdAsync(
+                seeded.Id,
+                SoftDeleteQueryMode.IncludeDeleted
+            );
             deleted.Id.ShouldBe(seeded.Id);
             deleted.DeletedTimestamp.ShouldNotBeNull();
         }
@@ -79,11 +82,15 @@ namespace tools_dotnet.Tests.CrudTest
             await using var dbContext = CreateDbContext();
             var repoAfterDelete = new LegacySoftDeleteRepo(dbContext, _mapper, _paginationProcessor);
 
-            var deletedItems = (await repoAfterDelete.GetAllDeletedAsync()).ToList();
+            var deletedItems = (
+                await repoAfterDelete.GetAllAsync(SoftDeleteQueryMode.DeletedOnly)
+            ).ToList();
             deletedItems.Count.ShouldBe(1);
             deletedItems[0].Id.ShouldBe(deleted.Id);
 
-            var includingDeletedItems = (await repoAfterDelete.GetAllIncludingDeletedAsync()).ToList();
+            var includingDeletedItems = (
+                await repoAfterDelete.GetAllAsync(SoftDeleteQueryMode.IncludeDeleted)
+            ).ToList();
             includingDeletedItems.Count.ShouldBe(2);
         }
 

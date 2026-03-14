@@ -38,14 +38,20 @@ namespace tools_dotnet.Service.Abstract
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetAllDtoIncludingDeletedAsync(cancellationToken);
+            return await _baseRepo.GetAllDtoAsync(
+                SoftDeleteQueryMode.IncludeDeleted,
+                cancellationToken
+            );
         }
 
         public override async Task<IEnumerable<TDto>> GetAllDeletedAsync(
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetAllDeletedDtoAsync(cancellationToken);
+            return await _baseRepo.GetAllDtoAsync(
+                SoftDeleteQueryMode.DeletedOnly,
+                cancellationToken
+            );
         }
 
         public override async Task<TDto> GetByIdIncludingDeletedAsync(
@@ -53,7 +59,11 @@ namespace tools_dotnet.Service.Abstract
             CancellationToken cancellationToken = default
         )
         {
-            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id, cancellationToken);
+            return await _baseRepo.GetByIdDtoAsync(
+                id,
+                SoftDeleteQueryMode.IncludeDeleted,
+                cancellationToken
+            );
         }
 
         public virtual async Task UpdateAsync(
