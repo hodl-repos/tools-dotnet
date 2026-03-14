@@ -24,6 +24,9 @@ Contains request and response models for paging (`IApiPagination`, `IPagedList`,
 - `tools_dotnet.Pagination`
 Contains parsing and query expression logic for filter/sort/page, plus OpenAPI support.
 
+- `tools_dotnet.Enum`
+Contains shared enums such as `SoftDeleteQueryMode` and `StringCaseType`.
+
 - `tools_dotnet.Errors` and `tools_dotnet.Exceptions`
 Contains reusable API error payloads and domain exceptions.
 
@@ -389,8 +392,14 @@ FIFO async queue wrapper for producer/consumer workflows with safe single-enumer
 - `EmailStringExtensions`
 Parses one or many email strings and extracts normalized email addresses.
 
+- `EnumCaseConverter`
+`System.Text.Json` enum converter that formats enum names using `StringCaseType` and `StringCaseExtensions`.
+
 - `GenericErrorExtensions`
 Maps known `tools_dotnet.Exceptions` and FluentValidation exceptions to API error models.
+
+- `GZipCompressionHelper`
+Compresses and decompresses `byte[]` and `string` payloads, including base64 helpers for transport/storage scenarios.
 
 - `ParseExtensions`
 Parses collections of strings into typed values (`IParsable<T>`) with configurable failure behavior.
@@ -401,14 +410,119 @@ Applies pagination/filter/sort to `IQueryable` and supports projection to DTOs w
 - `ResultStreamExtensions`
 Streams `IAsyncEnumerable<T>` responses as NDJSON (`application/x-ndjson`) with immediate flushing.
 
-- `SnakeCaseEnumConverter<T>`
-`System.Text.Json` enum converter that serializes enum names in snake_case.
+- `StringCaseExtensions`
+Fast string case conversion helpers for `snake_case`, `kebab-case`, `dot.case`, `COBOL-CASE`, `SCREAMING_SNAKE_CASE`, `PascalCase`, and `camelCase`.
 
 - `StringExtensions`
-String helpers including snake_case conversion, join-with-non-empty semantics, and Jaro-Winkler proximity scoring.
+General string helpers such as join-with-non-empty semantics and Jaro-Winkler proximity scoring.
 
 - `UrlStringExtensions`
 URL helpers for sanitize/normalize behavior, relative path resolution, domain extraction, and query removal.
+
+## String casing and enum JSON conversion
+
+Use `StringCaseExtensions` when you need fast name conversion in application code:
+
+```csharp
+using tools_dotnet.Utility;
+
+var snake = "XMLHttpRequest".ToSnakeCase();              // xml_http_request
+var kebab = "HttpStatusOk".ToKebabCase();               // http-status-ok
+var cobol = "HttpStatusOk".ToCobolCase();               // HTTP-STATUS-OK
+var camel = "http_status_ok".ToCamelCase();             // httpStatusOk
+var pascal = "user-name-value".ToPascalCase();          // UserNameValue
+```
+
+For enum JSON serialization, configure `EnumCaseConverter` with a `StringCaseType`:
+
+```csharp
+using System.Text.Json;
+using tools_dotnet.Enum;
+using tools_dotnet.Utility;
+
+public enum SyncStatus
+{
+    AwaitingReview,
+    HttpStatusOk,
+}
+
+var options = new JsonSerializerOptions();
+options.Converters.Add(new EnumCaseConverter(StringCaseType.SnakeCase));
+
+var json = JsonSerializer.Serialize(SyncStatus.HttpStatusOk, options);
+// "http_status_ok"
+
+var value = JsonSerializer.Deserialize<SyncStatus>("\"awaiting_review\"", options);
+```
+
+Typical ASP.NET Core registration:
+
+```csharp
+using tools_dotnet.Enum;
+using tools_dotnet.Utility;
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new EnumCaseConverter(StringCaseType.UpperKebabCase));
+});
+```
+
+Available case styles:
+
+- `StringCaseType.Original`
+- `StringCaseType.CamelCase`
+- `StringCaseType.PascalCase`
+- `StringCaseType.SnakeCase`
+- `StringCaseType.KebabCase`
+- `StringCaseType.UpperKebabCase` / `StringCaseType.CobolCase`
+- `StringCaseType.ScreamingSnakeCase` / `StringCaseType.UpperSnakeCase`
+- `StringCaseType.DotCase`
+
+## Obsolete and removed APIs
+
+Recent changes replaced a few older APIs. If you are upgrading, use these mappings:
+
+- `SnakeCaseEnumConverter<T>` was removed. Replace it with `new EnumCaseConverter(StringCaseType.SnakeCase)`.
+- `UpperKebabCaseEnumConverter<TEnum>` was removed. Replace it with `new EnumCaseConverter(StringCaseType.UpperKebabCase)` or `StringCaseType.CobolCase`.
+- Repo `GetAllIncludingDeletedAsync(...)` was removed. Replace it with `GetAllAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`.
+- Repo `GetAllDeletedAsync(...)` was removed. Replace it with `GetAllAsync(SoftDeleteQueryMode.DeletedOnly, ...)`.
+- Repo `GetByIdIncludingDeletedAsync(...)` was removed. Replace it with `GetByIdAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`.
+- DTO repo `GetAllDtoIncludingDeletedAsync(...)` was removed. Replace it with `GetAllDtoAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`.
+- DTO repo `GetAllDeletedDtoAsync(...)` was removed. Replace it with `GetAllDtoAsync(SoftDeleteQueryMode.DeletedOnly, ...)`.
+- DTO repo `GetByIdDtoIncludingDeletedAsync(...)` was removed. Replace it with `GetByIdDtoAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`.
+- `FindAsync(..., ignoreDeletedWithAuditable: false, ...)` was removed. Replace it with `FindAsync(..., SoftDeleteQueryMode.IncludeDeleted, ...)`.
+- `FindDtoAsync(..., ignoreDeletedWithAuditable: false, ...)` was removed. Replace it with `FindDtoAsync(..., SoftDeleteQueryMode.IncludeDeleted, ...)`.
+
+Before:
+
+```csharp
+var deletedUsers = await userRepo.GetAllIncludingDeletedAsync(cancellationToken);
+var deletedDtos = await userDtoRepo.GetAllDeletedDtoAsync(cancellationToken);
+var user = await userRepo.GetByIdIncludingDeletedAsync(id, cancellationToken);
+```
+
+After:
+
+```csharp
+var deletedUsers = await userRepo.GetAllAsync(
+    SoftDeleteQueryMode.IncludeDeleted,
+    cancellationToken);
+
+var deletedDtos = await userDtoRepo.GetAllDtoAsync(
+    SoftDeleteQueryMode.DeletedOnly,
+    cancellationToken);
+
+var user = await userRepo.GetByIdAsync(
+    id,
+    SoftDeleteQueryMode.IncludeDeleted,
+    cancellationToken);
+```
+
+Note:
+Service-level convenience methods such as `GetAllIncludingDeletedAsync(...)`,
+`GetAllDeletedAsync(...)`, and `GetByIdIncludingDeletedAsync(...)` still exist.
+The soft-delete consolidation only changed the repo-level APIs.
 
 ## Custom filter expression providers
 
