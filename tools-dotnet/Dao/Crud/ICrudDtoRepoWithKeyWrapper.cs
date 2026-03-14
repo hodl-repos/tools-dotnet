@@ -22,9 +22,21 @@ namespace tools_dotnet.Dao.Crud
 
         Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter);
 
+        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync();
+
+        Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filter
+        );
+
+        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync();
+
+        Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(Expression<Func<TEntity, bool>> filter);
+
         Task UpdateAsync(TKeyWrapper keyWrapper, TInputDto item);
 
         Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper);
+
+        Task<TDto> GetByIdDtoIncludingDeletedAsync(TKeyWrapper keyWrapper);
     }
 
     public interface ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>

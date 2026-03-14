@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
@@ -40,6 +41,23 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetConcurrencyTokenAsync(keyWrapper);
         }
 
+        public override async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        {
+            return await _baseRepo.GetAllDtoIncludingDeletedAsync(
+                keyWrapper.GetContainingResourceFilter()
+            );
+        }
+
+        public override async Task<IEnumerable<TDto>> GetAllDeletedAsync(TKeyWrapper keyWrapper)
+        {
+            return await _baseRepo.GetAllDeletedDtoAsync(keyWrapper.GetContainingResourceFilter());
+        }
+
+        public override async Task<TDto> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        {
+            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(keyWrapper);
+        }
+
         public virtual async Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TDto item,
@@ -58,12 +76,42 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        public override Task RestoreAsync(TKeyWrapper keyWrapper)
+        {
+            throw new System.InvalidOperationException(
+                $"Use {nameof(RestoreAsync)}({nameof(keyWrapper)}, concurrencyToken) on concurrency-aware services."
+            );
+        }
+
+        public override Task HardRemoveAsync(TKeyWrapper keyWrapper)
+        {
+            throw new System.InvalidOperationException(
+                $"Use {nameof(HardRemoveAsync)}({nameof(keyWrapper)}, concurrencyToken) on concurrency-aware services."
+            );
+        }
+
         public virtual async Task RemoveAsync(
             TKeyWrapper keyWrapper,
             TConcurrencyToken concurrencyToken
         )
         {
             await _baseRepo.RemoveAsync(keyWrapper, concurrencyToken);
+        }
+
+        public virtual async Task RestoreAsync(
+            TKeyWrapper keyWrapper,
+            TConcurrencyToken concurrencyToken
+        )
+        {
+            await _baseRepo.RestoreAsync(keyWrapper, concurrencyToken);
+        }
+
+        public virtual async Task HardRemoveAsync(
+            TKeyWrapper keyWrapper,
+            TConcurrencyToken concurrencyToken
+        )
+        {
+            await _baseRepo.HardRemoveAsync(keyWrapper, concurrencyToken);
         }
     }
 }

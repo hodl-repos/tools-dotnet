@@ -14,12 +14,22 @@ namespace tools_dotnet.Service
 
         Task<IEnumerable<TDto>> GetAllAsync();
 
+        Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync();
+
+        Task<IEnumerable<TDto>> GetAllDeletedAsync();
+
         Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination);
 
         Task<TDto> GetByIdAsync(TIdType id);
 
+        Task<TDto> GetByIdIncludingDeletedAsync(TIdType id);
+
         Task UpdateAsync(TDto item);
 
         Task RemoveAsync(TIdType id);
+
+        Task RestoreAsync(TIdType id);
+
+        Task HardRemoveAsync(TIdType id);
     }
 }

@@ -17,10 +17,26 @@ namespace tools_dotnet.Dao.Crud
 
         Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters);
 
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync();
+
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filters
+        );
+
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync();
+
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync(Expression<Func<TEntity, bool>> filters);
+
         Task<TEntity> GetByIdAsync(TKeyWrapper keyWrapper);
+
+        Task<TEntity> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper);
 
         Task UpdateAsync(TKeyWrapper keyWrapper, TEntity item);
 
         Task RemoveAsync(TKeyWrapper keyWrapper);
+
+        Task RestoreAsync(TKeyWrapper keyWrapper);
+
+        Task HardRemoveAsync(TKeyWrapper keyWrapper);
     }
 }

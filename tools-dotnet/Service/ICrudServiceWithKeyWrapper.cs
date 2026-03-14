@@ -13,12 +13,22 @@ namespace tools_dotnet.Service
 
         Task<IEnumerable<TDto>> GetAllAsync(TKeyWrapper keyWrapper);
 
+        Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(TKeyWrapper keyWrapper);
+
+        Task<IEnumerable<TDto>> GetAllDeletedAsync(TKeyWrapper keyWrapper);
+
         Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination, TKeyWrapper keyWrapper);
 
         Task<TDto> GetByIdAsync(TKeyWrapper keyWrapper);
 
+        Task<TDto> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper);
+
         Task UpdateAsync(TKeyWrapper keyWrapper, TDto item);
 
         Task RemoveAsync(TKeyWrapper keyWrapper);
+
+        Task RestoreAsync(TKeyWrapper keyWrapper);
+
+        Task HardRemoveAsync(TKeyWrapper keyWrapper);
     }
 }

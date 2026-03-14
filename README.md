@@ -248,7 +248,30 @@ Current base implementations include:
 
 - Automatic soft-delete filtering for `IAuditableEntity`.
 - Paging/filter/sort integration through `IPaginationProcessor`.
-- PostgreSQL-specific exception mapping for FK and unique violations.
+- Provider-neutral exception mapping for common FK/dependency and unique-key violations.
+
+### Soft-delete lifecycle
+
+For `IAuditableEntity` types, the default read APIs now stay on the active view:
+
+- `GetAllAsync(...)` and `GetByIdAsync(...)` exclude soft-deleted rows.
+- `RemoveAsync(...)` performs a soft delete.
+
+Use the explicit lifecycle APIs when you need administrative access to deleted rows:
+
+- `GetAllIncludingDeletedAsync(...)`
+- `GetAllDeletedAsync(...)`
+- `GetByIdIncludingDeletedAsync(...)`
+- `RestoreAsync(...)`
+- `HardRemoveAsync(...)`
+
+The DTO repos/services expose the same lifecycle through their DTO-shaped methods:
+
+- `GetAllDtoIncludingDeletedAsync(...)`
+- `GetAllDeletedDtoAsync(...)`
+- `GetByIdDtoIncludingDeletedAsync(...)`
+
+Concurrency-aware repos and services also expose token-aware `RestoreAsync(...)` and `HardRemoveAsync(...)` overloads.
 
 ### Service layer
 
@@ -347,6 +370,13 @@ The legacy non-concurrent repos and services still expose the old `RemoveAsync(.
 - `tools_dotnet.Errors.GenericApiError` and specific error payloads (`ApiValidationError`, `ApiItemNotFoundError`, etc.).
 - `tools_dotnet.Exceptions.*` for domain exceptions.
 - `tools_dotnet.Utility.GenericErrorExtensions.MapExceptionToApiError(...)` to map known exceptions to API errors.
+
+The CRUD base repos also translate common database constraint failures into domain exceptions:
+
+- `ConflictingItemException` for duplicate/unique constraint violations.
+- `DependentItemException` for delete/update operations blocked by dependent rows.
+
+This translation is provider-neutral in the library surface and is currently verified against SQL Server and PostgreSQL container-backed integration tests.
 
 ## Utilities (all classes in `tools_dotnet.Utility`)
 

@@ -12,6 +12,10 @@ namespace tools_dotnet.Dao.Crud
 
         Task RemoveAsync(TKeyWrapper keyWrapper, TConcurrencyToken concurrencyToken);
 
+        Task RestoreAsync(TKeyWrapper keyWrapper, TConcurrencyToken concurrencyToken);
+
+        Task HardRemoveAsync(TKeyWrapper keyWrapper, TConcurrencyToken concurrencyToken);
+
         Task<TConcurrencyToken> GetConcurrencyTokenAsync(TKeyWrapper keyWrapper);
     }
 }

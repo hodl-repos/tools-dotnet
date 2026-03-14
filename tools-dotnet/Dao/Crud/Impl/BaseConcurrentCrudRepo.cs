@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Services;
@@ -67,17 +66,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx)
-                {
-                    switch (pgEx.SqlState)
-                    {
-                        case PostgresErrorCodes.ForeignKeyViolation:
-                            throw new DependentItemException(pgEx.Message, false);
-                        case PostgresErrorCodes.UniqueViolation:
-                            throw new ConflictingItemException(pgEx.Message);
-                    }
-                }
-
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
                 throw;
             }
         }
@@ -86,6 +75,20 @@ namespace tools_dotnet.Dao.Crud.Impl
         {
             throw new InvalidOperationException(
                 $"Use {nameof(RemoveAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware repos."
+            );
+        }
+
+        public override Task RestoreAsync(TIdType id)
+        {
+            throw new InvalidOperationException(
+                $"Use {nameof(RestoreAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware repos."
+            );
+        }
+
+        public override Task HardRemoveAsync(TIdType id)
+        {
+            throw new InvalidOperationException(
+                $"Use {nameof(HardRemoveAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware repos."
             );
         }
 
@@ -123,14 +126,79 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                if (
-                    ex.InnerException is PostgresException pgEx
-                    && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation
-                )
-                {
-                    throw new DependentItemException(pgEx.Message, true);
-                }
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, true);
+                throw;
+            }
+        }
 
+        public virtual async Task RestoreAsync(TIdType id, TConcurrencyToken concurrencyToken)
+        {
+            var entity = await GetByIdInternalAsync(id, false);
+            CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
+                _concurrencyConfiguration,
+                entity,
+                concurrencyToken
+            );
+
+            if (entity is not IAuditableEntity auditableEntity)
+            {
+                throw CreateSoftDeleteNotSupportedException(nameof(RestoreAsync));
+            }
+
+            if (auditableEntity.DeletedTimestamp == null)
+            {
+                return;
+            }
+
+            auditableEntity.DeletedTimestamp = null;
+            _dbContext.Attach(auditableEntity);
+            _dbContext.Entry(auditableEntity).State = EntityState.Modified;
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
+                    _concurrencyConfiguration,
+                    ex,
+                    concurrencyToken
+                );
+            }
+            catch (DbUpdateException ex)
+            {
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
+                throw;
+            }
+        }
+
+        public virtual async Task HardRemoveAsync(TIdType id, TConcurrencyToken concurrencyToken)
+        {
+            var entity = await GetByIdInternalAsync(id, false);
+            CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
+                _concurrencyConfiguration,
+                entity,
+                concurrencyToken
+            );
+
+            _dbContext.Remove(entity);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
+                    _concurrencyConfiguration,
+                    ex,
+                    concurrencyToken
+                );
+            }
+            catch (DbUpdateException ex)
+            {
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, true);
                 throw;
             }
         }

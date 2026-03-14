@@ -12,6 +12,10 @@ namespace tools_dotnet.Dao.Crud
 
         Task RemoveAsync(TIdType id, TConcurrencyToken concurrencyToken);
 
+        Task RestoreAsync(TIdType id, TConcurrencyToken concurrencyToken);
+
+        Task HardRemoveAsync(TIdType id, TConcurrencyToken concurrencyToken);
+
         Task<TConcurrencyToken> GetConcurrencyTokenAsync(TIdType id);
     }
 }

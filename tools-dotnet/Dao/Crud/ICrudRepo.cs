@@ -17,6 +17,16 @@ namespace tools_dotnet.Dao.Crud
 
         Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filters);
 
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync();
+
+        Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filters
+        );
+
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync();
+
+        Task<IEnumerable<TEntity>> GetAllDeletedAsync(Expression<Func<TEntity, bool>> filters);
+
         Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
@@ -25,8 +35,14 @@ namespace tools_dotnet.Dao.Crud
 
         Task<TEntity> GetByIdAsync(TIdType id);
 
+        Task<TEntity> GetByIdIncludingDeletedAsync(TIdType id);
+
         Task UpdateAsync(TEntity item);
 
         Task RemoveAsync(TIdType id);
+
+        Task RestoreAsync(TIdType id);
+
+        Task HardRemoveAsync(TIdType id);
     }
 }

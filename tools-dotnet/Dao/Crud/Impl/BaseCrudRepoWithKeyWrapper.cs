@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dao.KeyWrapper;
 using tools_dotnet.Exceptions;
@@ -51,17 +50,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx)
-                {
-                    switch (pgEx.SqlState)
-                    {
-                        case PostgresErrorCodes.ForeignKeyViolation:
-                            throw new DependentItemException(pgEx.Message, false);
-                        case PostgresErrorCodes.UniqueViolation:
-                            throw new ConflictingItemException(pgEx.Message);
-                    }
-                }
-
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
                 throw;
             }
         }
@@ -71,11 +60,51 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await SetupQueryModifications(_dbContext.Set<TEntity>()).ToListAsync();
         }
 
+        public virtual async Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync()
+        {
+            return await SetupQueryModifications(
+                _dbContext.Set<TEntity>(),
+                SoftDeleteQueryMode.IncludeDeleted
+            ).ToListAsync();
+        }
+
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters
         )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filters)
+                .ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<TEntity>> GetAllIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filters
+        )
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted
+                )
+                .Where(filters)
+                .ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<TEntity>> GetAllDeletedAsync()
+        {
+            return await SetupQueryModifications(
+                _dbContext.Set<TEntity>(),
+                SoftDeleteQueryMode.DeletedOnly
+            ).ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<TEntity>> GetAllDeletedAsync(
+            Expression<Func<TEntity, bool>> filters
+        )
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.DeletedOnly
+                )
                 .Where(filters)
                 .ToListAsync();
         }
@@ -101,6 +130,11 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<TEntity> GetByIdAsync(TKeyWrapper keyWrapper)
         {
+            return await GetByIdInternalAsync(keyWrapper);
+        }
+
+        public virtual async Task<TEntity> GetByIdIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        {
             return await GetByIdInternalAsync(keyWrapper, false);
         }
 
@@ -116,17 +150,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx)
-                {
-                    switch (pgEx.SqlState)
-                    {
-                        case PostgresErrorCodes.ForeignKeyViolation:
-                            throw new DependentItemException(pgEx.Message, false);
-                        case PostgresErrorCodes.UniqueViolation:
-                            throw new ConflictingItemException(pgEx.Message);
-                    }
-                }
-
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
                 throw;
             }
         }
@@ -152,14 +176,52 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                if (
-                    ex.InnerException is PostgresException pgEx
-                    && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation
-                )
-                {
-                    throw new DependentItemException(pgEx.Message, true);
-                }
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, true);
+                throw;
+            }
+        }
 
+        public virtual async Task RestoreAsync(TKeyWrapper keyWrapper)
+        {
+            var entity = await GetByIdInternalAsync(keyWrapper, false);
+
+            if (entity is not IAuditableEntity auditableEntity)
+            {
+                throw CreateSoftDeleteNotSupportedException(nameof(RestoreAsync));
+            }
+
+            if (auditableEntity.DeletedTimestamp == null)
+            {
+                return;
+            }
+
+            auditableEntity.DeletedTimestamp = null;
+            _dbContext.Attach(auditableEntity);
+            _dbContext.Entry(auditableEntity).State = EntityState.Modified;
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
+                throw;
+            }
+        }
+
+        public virtual async Task HardRemoveAsync(TKeyWrapper keyWrapper)
+        {
+            var entity = await GetByIdInternalAsync(keyWrapper, false);
+            _dbContext.Remove(entity);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, true);
                 throw;
             }
         }
@@ -188,22 +250,58 @@ namespace tools_dotnet.Dao.Crud.Impl
             bool ignoreDeletedWithAuditable = true
         )
         {
-            if (ignoreDeletedWithAuditable)
+            return SetupQueryModifications(
+                query,
+                ignoreDeletedWithAuditable
+                    ? SoftDeleteQueryMode.ActiveOnly
+                    : SoftDeleteQueryMode.IncludeDeleted
+            );
+        }
+
+        protected virtual IQueryable<TEntity> SetupQueryModifications(
+            IQueryable<TEntity> query,
+            SoftDeleteQueryMode softDeleteQueryMode
+        )
+        {
+            return HandleAuditableEntity(query, softDeleteQueryMode);
+        }
+
+        protected virtual IQueryable<TEntity> HandleAuditableEntity(
+            IQueryable<TEntity> query,
+            SoftDeleteQueryMode softDeleteQueryMode
+        )
+        {
+            if (query is IQueryable<IAuditableEntity> auditableQuery)
             {
-                query = HandleAuditableEntity(query);
+                return softDeleteQueryMode switch
+                {
+                    SoftDeleteQueryMode.ActiveOnly => auditableQuery
+                        .Where(e => e.DeletedTimestamp == null)
+                        .Cast<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted => auditableQuery.Cast<TEntity>(),
+                    SoftDeleteQueryMode.DeletedOnly => auditableQuery
+                        .Where(e => e.DeletedTimestamp != null)
+                        .Cast<TEntity>(),
+                    _ => query,
+                };
+            }
+
+            if (softDeleteQueryMode == SoftDeleteQueryMode.DeletedOnly)
+            {
+                return query.Where(_ => false);
             }
 
             return query;
         }
 
-        protected virtual IQueryable<TEntity> HandleAuditableEntity(IQueryable<TEntity> query)
+        protected virtual InvalidOperationException CreateSoftDeleteNotSupportedException(
+            string operationName
+        )
         {
-            if (query is IQueryable<IAuditableEntity> auditableQuery)
-            {
-                return auditableQuery.Where(e => e.DeletedTimestamp == null).Cast<TEntity>();
-            }
-
-            return query;
+            return new(
+                $"Operation '{operationName}' requires '{typeof(TEntity).Name}' to implement "
+                    + $"{nameof(IAuditableEntity)}."
+            );
         }
     }
 }

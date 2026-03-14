@@ -41,6 +41,16 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetAllDtoAsync();
         }
 
+        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync()
+        {
+            return await _baseRepo.GetAllDtoIncludingDeletedAsync();
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync()
+        {
+            return await _baseRepo.GetAllDeletedDtoAsync();
+        }
+
         public virtual async Task<IPagedList<TDto>> GetAllAsync(IApiPagination apiPagination)
         {
             return await _baseRepo.GetAllDtoAsync(apiPagination);
@@ -51,9 +61,24 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetByIdDtoAsync(id);
         }
 
+        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(TIdType id)
+        {
+            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id);
+        }
+
         public virtual async Task RemoveAsync(TIdType id)
         {
             await _baseRepo.RemoveAsync(id);
+        }
+
+        public virtual async Task RestoreAsync(TIdType id)
+        {
+            await _baseRepo.RestoreAsync(id);
+        }
+
+        public virtual async Task HardRemoveAsync(TIdType id)
+        {
+            await _baseRepo.HardRemoveAsync(id);
         }
 
         public virtual async Task UpdateAsync(TDto item)

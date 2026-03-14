@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
@@ -30,6 +31,21 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetConcurrencyTokenAsync(id);
         }
 
+        public override async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync()
+        {
+            return await _baseRepo.GetAllDtoIncludingDeletedAsync();
+        }
+
+        public override async Task<IEnumerable<TDto>> GetAllDeletedAsync()
+        {
+            return await _baseRepo.GetAllDeletedDtoAsync();
+        }
+
+        public override async Task<TDto> GetByIdIncludingDeletedAsync(TIdType id)
+        {
+            return await _baseRepo.GetByIdDtoIncludingDeletedAsync(id);
+        }
+
         public virtual async Task UpdateAsync(TDto item, TConcurrencyToken concurrencyToken)
         {
             await _validator.ValidateAndThrowAsync(item);
@@ -43,9 +59,36 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        public override Task RestoreAsync(TIdType id)
+        {
+            throw new System.InvalidOperationException(
+                $"Use {nameof(RestoreAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware services."
+            );
+        }
+
+        public override Task HardRemoveAsync(TIdType id)
+        {
+            throw new System.InvalidOperationException(
+                $"Use {nameof(HardRemoveAsync)}({nameof(id)}, concurrencyToken) on concurrency-aware services."
+            );
+        }
+
         public virtual async Task RemoveAsync(TIdType id, TConcurrencyToken concurrencyToken)
         {
             await _baseRepo.RemoveAsync(id, concurrencyToken);
+        }
+
+        public virtual async Task RestoreAsync(TIdType id, TConcurrencyToken concurrencyToken)
+        {
+            await _baseRepo.RestoreAsync(id, concurrencyToken);
+        }
+
+        public virtual async Task HardRemoveAsync(
+            TIdType id,
+            TConcurrencyToken concurrencyToken
+        )
+        {
+            await _baseRepo.HardRemoveAsync(id, concurrencyToken);
         }
     }
 }

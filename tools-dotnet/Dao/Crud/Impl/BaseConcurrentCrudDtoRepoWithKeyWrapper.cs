@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dao.KeyWrapper;
 using tools_dotnet.Exceptions;
@@ -58,11 +57,61 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync();
         }
 
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync()
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted
+                )
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter
         )
         {
             return await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .Where(filter)
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoIncludingDeletedAsync(
+            Expression<Func<TEntity, bool>> filter
+        )
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted
+                )
+                .Where(filter)
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync()
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.DeletedOnly
+                )
+                .AsNoTracking()
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<TDto>> GetAllDeletedDtoAsync(
+            Expression<Func<TEntity, bool>> filter
+        )
+        {
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.DeletedOnly
+                )
                 .Where(filter)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
@@ -98,7 +147,26 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper)
         {
-            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
+            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>())
+                .AsNoTracking()
+                .Where(keyWrapper.GetKeyFilter())
+                .ProjectTo<TDto>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
+
+            if (dto == null)
+            {
+                throw ItemNotFoundException.Create(nameof(TEntity), keyWrapper.GetKeyAsString());
+            }
+
+            return dto;
+        }
+
+        public virtual async Task<TDto> GetByIdDtoIncludingDeletedAsync(TKeyWrapper keyWrapper)
+        {
+            var dto = await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.IncludeDeleted
+                )
                 .AsNoTracking()
                 .Where(keyWrapper.GetKeyFilter())
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
@@ -152,17 +220,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx)
-                {
-                    switch (pgEx.SqlState)
-                    {
-                        case PostgresErrorCodes.ForeignKeyViolation:
-                            throw new DependentItemException(pgEx.Message, false);
-                        case PostgresErrorCodes.UniqueViolation:
-                            throw new ConflictingItemException(pgEx.Message);
-                    }
-                }
-
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
                 throw;
             }
         }
