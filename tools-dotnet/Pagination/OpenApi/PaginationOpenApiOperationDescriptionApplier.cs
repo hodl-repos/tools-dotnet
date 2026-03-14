@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
+using System.Text.Json.Nodes;
 
 namespace tools_dotnet.Pagination.OpenApi
 {
@@ -43,21 +44,27 @@ namespace tools_dotnet.Pagination.OpenApi
                 return;
             }
 
-            var filtersDescription = PaginationOpenApiDescriptionBuilder.BuildFiltersDescription(
+            var filtersDocumentation =
+                PaginationOpenApiDescriptionBuilder.BuildFiltersDocumentation(
                 fieldDescriptors
             );
-            var sortsDescription = PaginationOpenApiDescriptionBuilder.BuildSortsDescription(
+            var sortsDocumentation =
+                PaginationOpenApiDescriptionBuilder.BuildSortsDocumentation(
                 fieldDescriptors
             );
 
             if (operation.Parameters != null)
             {
-                AppendQueryParameterDescription(
+                ApplyQueryParameterDocumentation(
                     operation.Parameters,
                     "filters",
-                    filtersDescription
+                    filtersDocumentation
                 );
-                AppendQueryParameterDescription(operation.Parameters, "sorts", sortsDescription);
+                ApplyQueryParameterDocumentation(
+                    operation.Parameters,
+                    "sorts",
+                    sortsDocumentation
+                );
             }
         }
 
@@ -178,13 +185,13 @@ namespace tools_dotnet.Pagination.OpenApi
             return null;
         }
 
-        private static void AppendQueryParameterDescription(
+        private static void ApplyQueryParameterDocumentation(
             IList<IOpenApiParameter> parameters,
             string parameterName,
-            string description
+            PaginationOpenApiParameterDocumentation documentation
         )
         {
-            if (string.IsNullOrWhiteSpace(description))
+            if (string.IsNullOrWhiteSpace(documentation.Description))
             {
                 return;
             }
@@ -201,16 +208,62 @@ namespace tools_dotnet.Pagination.OpenApi
 
             if (string.IsNullOrWhiteSpace(parameter.Description))
             {
-                parameter.Description = description;
+                parameter.Description = documentation.Description;
+            }
+            else if (
+                !parameter.Description.Contains(documentation.Description, StringComparison.Ordinal)
+            )
+            {
+                parameter.Description =
+                    $"{parameter.Description}{Environment.NewLine}{Environment.NewLine}{documentation.Description}";
+            }
+
+            IDictionary<string, IOpenApiExtension>? extensions = null;
+
+            if (parameter is OpenApiParameter concreteParameter)
+            {
+                concreteParameter.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+                extensions = concreteParameter.Extensions;
+            }
+            else
+            {
+                extensions = parameter.Extensions;
+            }
+
+            if (extensions != null)
+            {
+                extensions[PaginationOpenApiDescriptionBuilder.ExtensionName] =
+                    new JsonNodeExtension(documentation.Extension.DeepClone());
+            }
+
+            if (parameter is not OpenApiParameter concreteParameterWithExamples || documentation.Examples.Count == 0)
+            {
                 return;
             }
 
-            if (!parameter.Description.Contains(description, StringComparison.Ordinal))
+            if (concreteParameterWithExamples.Example == null)
             {
-                parameter.Description =
-                    $"{parameter.Description}{Environment.NewLine}{Environment.NewLine}{description}";
+                concreteParameterWithExamples.Example = JsonValue.Create(
+                    documentation.Examples[0].Value
+                );
+            }
+
+            if (
+                concreteParameterWithExamples.Examples == null
+                || concreteParameterWithExamples.Examples.Count == 0
+            )
+            {
+                concreteParameterWithExamples.Examples = documentation.Examples.ToDictionary(
+                    x => x.Name,
+                    x =>
+                        (IOpenApiExample)
+                            new OpenApiExample
+                            {
+                                Summary = x.Summary,
+                                Value = JsonValue.Create(x.Value),
+                            }
+                );
             }
         }
     }
 }
-

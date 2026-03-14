@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using System.Text.Json.Nodes;
 using Shouldly;
 using Swashbuckle.AspNetCore.Swagger;
 using tools_dotnet.Paging;
@@ -112,23 +113,59 @@ namespace tools_dotnet.Tests.PaginationTest
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
             filtersParameter.Description.ShouldNotBeNull();
-            filtersParameter.Description.ShouldContain("Allowed filter fields:");
-            filtersParameter.Description.ShouldContain("`name` (string): ==, ==*, !=, !=*, @=, @=*, !@=, !@=*, _=, _=*, !_=, !_=*, _-=, _-=*, !_-=, !_-=*");
-            filtersParameter.Description.ShouldContain("`age` (number): ==, !=, >, >=, <, <=");
-            filtersParameter.Description.ShouldContain("`enabled` (bool): ==, !=");
-            filtersParameter.Description.ShouldContain("`status` (enum(PaginationOpenApiStatus)): ==, !=");
-            filtersParameter.Description.ShouldContain("`external_id` (guid): ==, !=");
-            filtersParameter.Description.ShouldContain("`created_at` (date?): ==, !=, >, >=, <, <=");
+            filtersParameter.Description.ShouldContain("Syntax: field{operator}value.");
+            filtersParameter.Description.ShouldContain("Examples:");
+            filtersParameter.Description.ShouldContain("Allowed fields:");
+            filtersParameter.Description.ShouldContain("`name`");
+            filtersParameter.Description.ShouldContain("`age`");
+            filtersParameter.Description.ShouldContain("`enabled`");
+            filtersParameter.Description.ShouldContain("`status`");
+            filtersParameter.Description.ShouldContain("`external_id`");
+            filtersParameter.Description.ShouldContain("`created_at`");
             filtersParameter.Description.ShouldNotContain("NotDocumented");
 
             sortsParameter.Description.ShouldNotBeNull();
-            sortsParameter.Description.ShouldContain("Allowed sort fields:");
+            sortsParameter.Description.ShouldContain("Syntax: field for ascending");
+            sortsParameter.Description.ShouldContain("Examples:");
+            sortsParameter.Description.ShouldContain("Allowed fields:");
             sortsParameter.Description.ShouldContain("`name`");
             sortsParameter.Description.ShouldContain("`age`");
             sortsParameter.Description.ShouldContain("`status`");
             sortsParameter.Description.ShouldContain("`created_at`");
             sortsParameter.Description.ShouldNotContain("`enabled`");
             sortsParameter.Description.ShouldNotContain("`external_id`");
+
+            var filtersExtension = GetPaginationExtension(filtersParameter);
+            filtersExtension["mode"]?.GetValue<string>().ShouldBe("filters");
+            filtersExtension["examples"]?.AsArray().Select(GetJsonNodeString).ShouldBe(
+                ["name==sample", "age>=42", "name==sample,enabled==true"],
+                ignoreOrder: false
+            );
+
+            var filterFields = filtersExtension["fields"]?.AsArray().ShouldNotBeNull();
+            filterFields.Count.ShouldBe(6);
+            filterFields[0]?["name"]?.GetValue<string>().ShouldBe("age");
+            filterFields[0]?["type"]?.GetValue<string>().ShouldBe("number");
+            filterFields[0]?["source"]?.GetValue<string>().ShouldBe("member");
+            filterFields[0]?["operators"]?.AsArray().Select(GetJsonNodeString).ShouldContain(">=");
+
+            var sortsExtension = GetPaginationExtension(sortsParameter);
+            sortsExtension["mode"]?.GetValue<string>().ShouldBe("sorts");
+            sortsExtension["examples"]?.AsArray().Select(GetJsonNodeString).ShouldBe(
+                ["name", "-created_at", "status,-created_at"],
+                ignoreOrder: false
+            );
+            sortsExtension["fields"]?.AsArray().Any(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "enabled",
+                    StringComparison.Ordinal
+                )
+            ).ShouldBeFalse();
+
+            GetPrimaryExampleValue(filtersParameter).ShouldBe("name==sample");
+            GetExampleValues(filtersParameter).ShouldContainKeyAndValue("comparison", "age>=42");
+            GetExampleValues(sortsParameter).ShouldContainKeyAndValue("descending", "-created_at");
         }
 
         [Test]
@@ -138,9 +175,9 @@ namespace tools_dotnet.Tests.PaginationTest
             var filtersParameter = GetQueryParameter(operation, "filters");
 
             filtersParameter.Description.ShouldNotBeNull();
-            filtersParameter.Description.ShouldContain("Allowed filter fields:");
-            filtersParameter.Description.ShouldContain("`name` (string):");
-            filtersParameter.Description.ShouldContain("`age` (number):");
+            filtersParameter.Description.ShouldContain("Allowed fields:");
+            filtersParameter.Description.ShouldContain("`name`");
+            filtersParameter.Description.ShouldContain("`age`");
         }
 
         [Test]
@@ -151,14 +188,30 @@ namespace tools_dotnet.Tests.PaginationTest
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
             filtersParameter.Description.ShouldNotBeNull();
-            filtersParameter.Description.ShouldContain("`owner.display_name` (string):");
-            filtersParameter.Description.ShouldContain("`owner.age` (number):");
+            filtersParameter.Description.ShouldContain("`owner.display_name`");
+            filtersParameter.Description.ShouldContain("`owner.age`");
             filtersParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
 
             sortsParameter.Description.ShouldNotBeNull();
             sortsParameter.Description.ShouldContain("`owner.display_name`");
             sortsParameter.Description.ShouldNotContain("`owner.age`");
             sortsParameter.Description.ShouldNotContain("`blocked_owner.display_name`");
+
+            var filtersExtension = GetPaginationExtension(filtersParameter);
+            filtersExtension["fields"]?.AsArray().Any(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "owner.display_name",
+                    StringComparison.Ordinal
+                )
+            ).ShouldBeTrue();
+            filtersExtension["fields"]?.AsArray().Any(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "blocked_owner.display_name",
+                    StringComparison.Ordinal
+                )
+            ).ShouldBeFalse();
         }
 
         [Test]
@@ -169,10 +222,34 @@ namespace tools_dotnet.Tests.PaginationTest
             var sortsParameter = GetQueryParameter(operation, "sorts");
 
             filtersParameter.Description.ShouldNotBeNull();
-            filtersParameter.Description.ShouldContain("`is_adult` (custom): custom");
+            filtersParameter.Description.ShouldContain("`is_adult`");
 
             sortsParameter.Description.ShouldNotBeNull();
             sortsParameter.Description.ShouldContain("`by_name_length`");
+
+            var filtersExtension = GetPaginationExtension(filtersParameter);
+            filtersExtension["fields"]?.AsArray().Any(x =>
+                string.Equals(x?["name"]?.GetValue<string>(), "is_adult", StringComparison.Ordinal)
+                && string.Equals(
+                    x["source"]?.GetValue<string>(),
+                    "custom",
+                    StringComparison.Ordinal
+                )
+            ).ShouldBeTrue();
+
+            var sortsExtension = GetPaginationExtension(sortsParameter);
+            sortsExtension["fields"]?.AsArray().Any(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "by_name_length",
+                    StringComparison.Ordinal
+                )
+                && string.Equals(
+                    x["source"]?.GetValue<string>(),
+                    "custom",
+                    StringComparison.Ordinal
+                )
+            ).ShouldBeTrue();
         }
 
         [Test]
@@ -286,10 +363,15 @@ namespace tools_dotnet.Tests.PaginationTest
 
         private static void AssertQueryParameterDescriptionMatches(OpenApiOperation expected, OpenApiOperation actual, string parameterName)
         {
-            var expectedDescription = GetQueryParameter(expected, parameterName).Description;
-            var actualDescription = GetQueryParameter(actual, parameterName).Description;
+            var expectedParameter = GetQueryParameter(expected, parameterName);
+            var actualParameter = GetQueryParameter(actual, parameterName);
 
-            actualDescription.ShouldBe(expectedDescription);
+            actualParameter.Description.ShouldBe(expectedParameter.Description);
+            GetPrimaryExampleValue(actualParameter).ShouldBe(GetPrimaryExampleValue(expectedParameter));
+            GetExampleValues(actualParameter).ShouldBe(GetExampleValues(expectedParameter));
+            GetPaginationExtension(actualParameter).ToJsonString().ShouldBe(
+                GetPaginationExtension(expectedParameter).ToJsonString()
+            );
         }
 
         private static IOpenApiParameter GetQueryParameter(OpenApiOperation operation, string name)
@@ -297,6 +379,49 @@ namespace tools_dotnet.Tests.PaginationTest
             return operation.Parameters!.Single(x =>
                 x.In == ParameterLocation.Query &&
                 string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static JsonObject GetPaginationExtension(IOpenApiParameter parameter)
+        {
+            parameter.Extensions.ShouldContainKey(PaginationOpenApiDescriptionBuilder.ExtensionName);
+            parameter.Extensions[PaginationOpenApiDescriptionBuilder.ExtensionName]
+                .ShouldBeOfType<JsonNodeExtension>();
+
+            return ((JsonNodeExtension)parameter.Extensions[PaginationOpenApiDescriptionBuilder.ExtensionName]).Node
+                .ShouldBeOfType<JsonObject>();
+        }
+
+        private static string? GetPrimaryExampleValue(IOpenApiParameter parameter)
+        {
+            return GetJsonNodeString(parameter.Example);
+        }
+
+        private static Dictionary<string, string?> GetExampleValues(IOpenApiParameter parameter)
+        {
+            if (parameter.Examples == null)
+            {
+                return new Dictionary<string, string?>();
+            }
+
+            return parameter.Examples.ToDictionary(
+                x => x.Key,
+                x => GetJsonNodeString(x.Value.Value)
+            );
+        }
+
+        private static string? GetJsonNodeString(JsonNode? node)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+
+            if (node is JsonValue value)
+            {
+                return value.GetValue<string>();
+            }
+
+            return node.ToJsonString();
         }
 
         private sealed class TestWebHostEnvironment : IWebHostEnvironment

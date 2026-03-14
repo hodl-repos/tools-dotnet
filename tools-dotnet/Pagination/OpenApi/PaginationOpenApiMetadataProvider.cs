@@ -239,7 +239,8 @@ namespace tools_dotnet.Pagination.OpenApi
                             memberType,
                             attribute.CanFilter,
                             attribute.CanSort,
-                            operators
+                            operators,
+                            source: "member"
                         )
                     );
 
@@ -299,7 +300,8 @@ namespace tools_dotnet.Pagination.OpenApi
                             canFilter: true,
                             canSort: false,
                             operators: Array.Empty<PaginationOperator>(),
-                            filterTypeDisplayNameOverride: "custom"
+                            filterTypeDisplayNameOverride: "custom",
+                            source: "custom"
                         )
                     );
                 }
@@ -340,7 +342,8 @@ namespace tools_dotnet.Pagination.OpenApi
                             typeof(string),
                             canFilter: false,
                             canSort: true,
-                            operators: Array.Empty<PaginationOperator>()
+                            operators: Array.Empty<PaginationOperator>(),
+                            source: "custom"
                         )
                     );
                 }

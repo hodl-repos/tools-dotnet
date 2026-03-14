@@ -178,7 +178,13 @@ var citextProcessor = new PaginationProcessor(
 
 ## OpenAPI support for filters and sorts
 
-Pagination OpenAPI support can enrich `filters` and `sorts` query parameter descriptions in `openapi.json` by reading `[Pagination]` attributes.
+Pagination OpenAPI support can enrich `filters` and `sorts` in `openapi.json` by reading `[Pagination]` attributes.
+The generated docs now include:
+
+- readable parameter descriptions with shorter syntax guidance
+- concrete query examples for `filters` and `sorts`
+- machine-readable `x-tools-dotnet-pagination` metadata for tooling/codegen
+
 Nested fields are included when parent members allow sub-properties (`CanFilterSubProperties` / `CanSortSubProperties`).
 
 Supported integrations:
@@ -187,6 +193,45 @@ Supported integrations:
 - ASP.NET Core OpenAPI (`AddOpenApi`)
 
 Custom method containers (`IPaginationCustomFilterMethods` / `IPaginationCustomSortsMethods`) are included in docs when registered in DI, or passed to `AddPaginationOpenApiSupport(...)`.
+
+Example output for the `filters` parameter:
+
+```json
+{
+  "name": "filters",
+  "in": "query",
+  "description": "Syntax: field{operator}value. Use ',' for AND and '|' for OR.",
+  "example": "name==sample",
+  "examples": {
+    "simple": { "summary": "Simple equality filter", "value": "name==sample" },
+    "comparison": { "summary": "Comparison filter", "value": "age>=42" },
+    "combined": { "summary": "Combined AND filter", "value": "name==sample,enabled==true" }
+  },
+  "x-tools-dotnet-pagination": {
+    "mode": "filters",
+    "syntax": {
+      "expression": "field{operator}value",
+      "andSeparator": ",",
+      "orSeparator": "|",
+      "escapeCharacter": "\\",
+      "nullLiteral": "null"
+    },
+    "examples": [
+      "name==sample",
+      "age>=42",
+      "name==sample,enabled==true"
+    ],
+    "fields": [
+      {
+        "name": "name",
+        "type": "string",
+        "operators": ["==", "==*", "!=", "!=*", "@=", "@=*", "!@=", "!@=*", "_=", "_=*", "!_=", "!_=*", "_-=", "_-=*", "!_-=", "!_-=*"],
+        "source": "member"
+      }
+    ]
+  }
+}
+```
 
 ### Swashbuckle / SwaggerGen
 
