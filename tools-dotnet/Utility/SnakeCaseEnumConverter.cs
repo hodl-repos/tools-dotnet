@@ -16,7 +16,7 @@ namespace tools_dotnet.Utility
         {
             if (string.IsNullOrEmpty(name))
                 return name;
-            return name.ToSnakeCase()!;
+            return StringCaseNewExtensions.ToSnakeCase(name);
         }
     }
 }

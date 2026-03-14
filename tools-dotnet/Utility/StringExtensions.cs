@@ -1,29 +1,11 @@
-using System;
-using System.Linq;
-using System.Text.RegularExpressions;
-
 namespace tools_dotnet.Utility
 {
     /// <summary>
     /// Provides extension methods for string manipulation and analysis.
+    /// Also, see: <seealso cref="tools_dotnet.Utility.StringCaseExtensions"/>
     /// </summary>
     public static class StringExtensions
     {
-        /// <summary>
-        /// Converts the given string to snake_case format
-        /// </summary>
-        public static string? ToSnakeCase(this string? input, char replaceChar = '_')
-        {
-            if (string.IsNullOrEmpty(input))
-            {
-                return input;
-            }
-
-            var startUnderscores = Regex.Match(input, @"^_+");
-            return startUnderscores
-                + Regex.Replace(input, @"([a-z0-9])([A-Z])", "$1" + replaceChar + "$2").ToLower();
-        }
-
         /// <summary>
         /// uses string.Join but first string.IsNullOrEmpty to remove all useless string
         /// </summary>
