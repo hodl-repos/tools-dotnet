@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace tools_dotnet.Utility
 {
-    public static class StringNewNewCaseExtensions
+    public static class StringCaseExtensions
     {
         public static string ToSnakeCase(this string? value) =>
             ConvertDelimitedCase(value, '_', upper: false);

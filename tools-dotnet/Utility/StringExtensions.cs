@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 namespace tools_dotnet.Utility
 {
     /// <summary>
