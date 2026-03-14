@@ -80,16 +80,6 @@ namespace tools_dotnet.Utility
                                 isWordStart = true;
                             }
                         }
-                        else if (currentType == CharType.Digit)
-                        {
-                            if (prevType != CharType.Digit && prevType != CharType.Separator)
-                                isWordStart = true;
-                        }
-                        else if (prevType == CharType.Digit)
-                        {
-                            isWordStart = true;
-                        }
-
                         if (isWordStart && wroteAny)
                             dst[di++] = separator;
 
@@ -157,15 +147,6 @@ namespace tools_dotnet.Utility
                                     boundary = true;
                                 }
                             }
-                            else if (currentType == CharType.Digit)
-                            {
-                                if (prevType != CharType.Digit)
-                                    boundary = true;
-                            }
-                            else if (prevType == CharType.Digit)
-                            {
-                                boundary = true;
-                            }
                         }
 
                         if (boundary)
@@ -232,16 +213,6 @@ namespace tools_dotnet.Utility
                         isWordStart = true;
                     }
                 }
-                else if (currentType == CharType.Digit)
-                {
-                    if (prevType != CharType.Digit && prevType != CharType.Separator)
-                        isWordStart = true;
-                }
-                else if (prevType == CharType.Digit)
-                {
-                    isWordStart = true;
-                }
-
                 if (isWordStart && wroteAny)
                     length++;
 

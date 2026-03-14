@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Shouldly;
 using tools_dotnet.Utility;
 
@@ -19,8 +20,26 @@ namespace tools_dotnet.Tests.UtilityTest
 
         private static readonly ConversionExpectation[] Cases =
         [
-            new(null, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty),
-            new(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty),
+            new(
+                null,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty
+            ),
+            new(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty
+            ),
             new(
                 "XMLHttpRequest",
                 "xml_http_request",
@@ -33,11 +52,11 @@ namespace tools_dotnet.Tests.UtilityTest
             ),
             new(
                 "Version2Value",
-                "version_2_value",
-                "version-2-value",
-                "version.2.value",
-                "VERSION-2-VALUE",
-                "VERSION_2_VALUE",
+                "version2_value",
+                "version2-value",
+                "version2.value",
+                "VERSION2-VALUE",
+                "VERSION2_VALUE",
                 "Version2Value",
                 "version2Value"
             ),
@@ -51,6 +70,81 @@ namespace tools_dotnet.Tests.UtilityTest
                 "UserNameValueTestPathSegment",
                 "userNameValueTestPathSegment"
             ),
+            new(
+                "FOOBar",
+                "foo_bar",
+                "foo-bar",
+                "foo.bar",
+                "FOO-BAR",
+                "FOO_BAR",
+                "FooBar",
+                "fooBar"
+            ),
+            new(
+                "SimpleXMLParser",
+                "simple_xml_parser",
+                "simple-xml-parser",
+                "simple.xml.parser",
+                "SIMPLE-XML-PARSER",
+                "SIMPLE_XML_PARSER",
+                "SimpleXmlParser",
+                "simpleXmlParser"
+            ),
+            new(
+                "GL11Version",
+                "gl11_version",
+                "gl11-version",
+                "gl11.version",
+                "GL11-VERSION",
+                "GL11_VERSION",
+                "Gl11Version",
+                "gl11Version"
+            ),
+            new(
+                "IsoAlpha2",
+                "iso_alpha2",
+                "iso-alpha2",
+                "iso.alpha2",
+                "ISO-ALPHA2",
+                "ISO_ALPHA2",
+                "IsoAlpha2",
+                "isoAlpha2"
+            ),
+            new(
+                "foo2Bar",
+                "foo2_bar",
+                "foo2-bar",
+                "foo2.bar",
+                "FOO2-BAR",
+                "FOO2_BAR",
+                "Foo2Bar",
+                "foo2Bar"
+            ),
+            new(
+                "__LeadingUnderscoresValue",
+                "leading_underscores_value",
+                "leading-underscores-value",
+                "leading.underscores.value",
+                "LEADING-UNDERSCORES-VALUE",
+                "LEADING_UNDERSCORES_VALUE",
+                "LeadingUnderscoresValue",
+                "leadingUnderscoresValue"
+            ),
+        ];
+
+        private static readonly string[] OldCompatibilityCases =
+        [
+            "fooBar",
+            "PascalCase",
+            "already_snake_case",
+            "URL",
+            "userID",
+            "Version2Value",
+            "GL11Version",
+            "foo2Bar",
+            "IsoAlpha2",
+            "Test1",
+            "Http2XX",
         ];
 
         [TestCaseSource(nameof(Cases))]
@@ -64,5 +158,26 @@ namespace tools_dotnet.Tests.UtilityTest
             expectation.Input.ToPascalCase().ShouldBe(expectation.PascalCase);
             expectation.Input.ToCamelCase().ShouldBe(expectation.CamelCase);
         }
+
+        [TestCaseSource(nameof(OldCompatibilityCases))]
+        public void ToSnakeCase_ShouldMatchOldSnakeCase_ForDigitAndCompatibilityCases(string input)
+        {
+            input.ToSnakeCase().ShouldBe(ToOldSnakeCase(input));
+        }
+
+        private static string? ToOldSnakeCase(string? input, char replaceChar = '_')
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
+            var startUnderscores = Regex.Match(input, @"^_+");
+            return startUnderscores
+                + Regex
+                    .Replace(input, @"([a-z0-9])([A-Z])", "$1" + replaceChar + "$2")
+                    .ToLowerInvariant();
+        }
     }
 }
+
