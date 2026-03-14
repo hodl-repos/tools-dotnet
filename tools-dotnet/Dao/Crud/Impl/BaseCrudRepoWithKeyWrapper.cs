@@ -107,9 +107,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         public virtual async Task UpdateAsync(TKeyWrapper keyWrapper, TEntity item)
         {
             var dbEntity = await GetByIdInternalAsync(keyWrapper);
-
             _mapper.Map(item, dbEntity);
-
             keyWrapper.UpdateEntityWithContainingResource(dbEntity);
 
             try
@@ -154,7 +152,6 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                // foreign key violation
                 if (
                     ex.InnerException is PostgresException pgEx
                     && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation

@@ -11,13 +11,21 @@ namespace tools_dotnet.Exceptions
         public ConcurrentModificationException() { }
 
         public ConcurrentModificationException(
-            string dbConcurrencyStamp,
-            string requestConcurrencyStamp
+            string? dbConcurrencyStamp,
+            string? requestConcurrencyStamp
         )
-            : base(
-                $"Concurrency stamps do not match. Database: {dbConcurrencyStamp}, "
-                    + $"Request: {requestConcurrencyStamp}"
-            )
+            : base(CreateMessage(dbConcurrencyStamp, requestConcurrencyStamp))
+        {
+            DbConcurrencyStamp = dbConcurrencyStamp;
+            RequestConcurrencyStamp = requestConcurrencyStamp;
+        }
+
+        public ConcurrentModificationException(
+            string? dbConcurrencyStamp,
+            string? requestConcurrencyStamp,
+            Exception innerException
+        )
+            : base(CreateMessage(dbConcurrencyStamp, requestConcurrencyStamp), innerException)
         {
             DbConcurrencyStamp = dbConcurrencyStamp;
             RequestConcurrencyStamp = requestConcurrencyStamp;
@@ -28,5 +36,14 @@ namespace tools_dotnet.Exceptions
 
         public ConcurrentModificationException(string message, Exception innerException)
             : base(message, innerException) { }
+
+        private static string CreateMessage(
+            string? dbConcurrencyStamp,
+            string? requestConcurrencyStamp
+        )
+        {
+            return $"Concurrency stamps do not match. Database: {dbConcurrencyStamp ?? "null"}, "
+                + $"Request: {requestConcurrencyStamp ?? "null"}";
+        }
     }
 }

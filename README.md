@@ -263,8 +263,84 @@ Base services call FluentValidation before `Add`/`Update`.
 
 - `IEntity` and `IEntityWithId<T>` for base entity contracts.
 - `IChangeTrackingEntity` and `IAuditableEntity` for created/updated/deleted timestamps.
+- `IChangeTrackingDto` for DTOs that round-trip `CreatedTimestamp` / `UpdatedTimestamp`.
 - `TimestampsInterceptor` to auto-populate created/updated timestamps in EF Core `SaveChanges`.
 - `IKeyWrapper<TEntity>` for nested-resource key handling and scoped filtering.
+
+### Optimistic concurrency
+
+The concurrency-aware CRUD variants add optimistic concurrency using a configurable token:
+
+- `IConcurrentCrudRepo<...>` / `BaseConcurrentCrudRepo<...>`
+- `IConcurrentCrudDtoRepo<...>` / `BaseConcurrentCrudDtoRepo<...>`
+- `IConcurrentCrudRepoWithKeyWrapper<...>` / `BaseConcurrentCrudRepoWithKeyWrapper<...>`
+- `IConcurrentCrudDtoRepoWithKeyWrapper<...>` / `BaseConcurrentCrudDtoRepoWithKeyWrapper<...>`
+- `IConcurrentCrudService<...>` / `BaseConcurrentCrudService<...>`
+- `IConcurrentCrudServiceWithKeyWrapper<...>` / `BaseConcurrentCrudServiceWithKeyWrapper<...>`
+
+The legacy `BaseCrud...` and `BaseCrudService...` types stay non-concurrent and preserve the old behavior.
+
+By default, the concurrent variants use `UpdatedTimestamp`, and `UpdateAsync(item)` is enforced when the request payload exposes the configured token property.
+
+Example DTO:
+
+```csharp
+using tools_dotnet.Dto;
+
+public sealed class UserDto : IDtoWithId<int>, IChangeTrackingDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public DateTimeOffset CreatedTimestamp { get; set; }
+    public DateTimeOffset? UpdatedTimestamp { get; set; }
+}
+```
+
+Update requests should round-trip the `UpdatedTimestamp` from the last read.
+If the stored value no longer matches, the repo throws `ConcurrentModificationException`.
+
+You can also fetch the current token before an update or delete:
+
+```csharp
+var token = await userRepo.GetConcurrencyTokenAsync(userId);
+await userRepo.UpdateAsync(userDto, token);
+await userRepo.RemoveAsync(userId, token);
+```
+
+You can opt into other token styles when constructing a concurrent base repo:
+
+```csharp
+using tools_dotnet.Dao.Crud;
+
+public sealed class UserRepo : BaseConcurrentCrudDtoRepo<User, int, UserDto, byte[]>
+{
+    public UserRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
+        : base(
+            dbContext,
+            mapper,
+            paginationProcessor,
+            CrudConcurrencyConfiguration.SqlServerRowVersion("RowVersion")
+        ) { }
+}
+```
+
+Built-in helpers:
+
+- `CrudConcurrencyConfiguration.UpdatedTimestamp()` for timestamp-based concurrency.
+- `CrudConcurrencyConfiguration.SqlServerRowVersion()` for SQL Server `rowversion` / `timestamp` style properties.
+- `CrudConcurrencyConfiguration.PostgreSqlXmin()` for PostgreSQL `xmin` properties mapped into your entity.
+- `CrudConcurrencyConfiguration.ForProperty<TConcurrencyToken>(...)` for custom token properties such as `Guid`, `string`, `byte[]`, or renamed DTO fields.
+
+If your database generates the token during `UPDATE` (for example, a trigger-generated UUID), use the explicit overloads even when the input DTO does not carry the token:
+
+```csharp
+var token = await userRepo.GetConcurrencyTokenAsync(userId);
+
+await userRepo.UpdateAsync(updateDtoWithoutToken, token);
+await userRepo.RemoveAsync(userId, token);
+```
+
+The legacy non-concurrent repos and services still expose the old `RemoveAsync(...)` overloads. The concurrent variants require the token-aware overloads for deletes.
 
 ## Error and exception helpers
 

@@ -8,7 +8,6 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using tools_dotnet.Dao.Entity;
-using tools_dotnet.Dto;
 using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
@@ -144,7 +143,6 @@ namespace tools_dotnet.Dao.Crud.Impl
         public virtual async Task UpdateAsync(TEntity item)
         {
             var dbEntity = await GetByIdInternalAsync(item.Id);
-
             _mapper.Map(item, dbEntity);
 
             try
@@ -189,7 +187,6 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
             catch (DbUpdateException ex)
             {
-                // foreign key violation
                 if (
                     ex.InnerException is PostgresException pgEx
                     && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation

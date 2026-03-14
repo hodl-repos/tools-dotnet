@@ -16,20 +16,32 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
-    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
-        : BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
-            ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
+    public abstract class BaseConcurrentCrudDtoRepoWithKeyWrapper<
+        TEntity,
+        TKeyWrapper,
+        TDto,
+        TInputDto,
+        TConcurrencyToken
+    > : BaseConcurrentCrudRepoWithKeyWrapper<TEntity, TKeyWrapper, TConcurrencyToken>,
+            IConcurrentCrudDtoRepoWithKeyWrapper<
+                TEntity,
+                TKeyWrapper,
+                TDto,
+                TInputDto,
+                TConcurrencyToken
+            >
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
         where TInputDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(
+        protected BaseConcurrentCrudDtoRepoWithKeyWrapper(
             DbContext dbContext,
             IMapper mapper,
-            IPaginationProcessor paginationProcessor
+            IPaginationProcessor paginationProcessor,
+            CrudConcurrencyConfiguration concurrencyConfiguration
         )
-            : base(dbContext, mapper, paginationProcessor) { }
+            : base(dbContext, mapper, paginationProcessor, concurrencyConfiguration) { }
 
         public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item)
         {
@@ -102,12 +114,41 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task UpdateAsync(TKeyWrapper keyWrapper, TInputDto item)
         {
+            var concurrencyToken =
+                CrudConcurrencyHelper.GetRequiredRequestConcurrencyToken<TConcurrencyToken>(
+                    _concurrencyConfiguration,
+                    item
+                );
+
+            await UpdateAsync(keyWrapper, item, concurrencyToken);
+        }
+
+        public virtual async Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            TConcurrencyToken concurrencyToken
+        )
+        {
             var dbEntity = await GetByIdInternalAsync(keyWrapper);
+            CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
+                _concurrencyConfiguration,
+                dbEntity,
+                concurrencyToken
+            );
+
             _mapper.Map(item, dbEntity);
 
             try
             {
                 await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw await CrudConcurrencyHelper.CreateConcurrentModificationExceptionAsync(
+                    _concurrencyConfiguration,
+                    ex,
+                    concurrencyToken
+                );
             }
             catch (DbUpdateException ex)
             {
@@ -127,18 +168,34 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
-    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
-        : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>,
-            ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
+    public abstract class BaseConcurrentCrudDtoRepoWithKeyWrapper<
+        TEntity,
+        TKeyWrapper,
+        TDto,
+        TConcurrencyToken
+    > : BaseConcurrentCrudDtoRepoWithKeyWrapper<
+            TEntity,
+            TKeyWrapper,
+            TDto,
+            TDto,
+            TConcurrencyToken
+        >,
+            IConcurrentCrudDtoRepoWithKeyWrapper<
+                TEntity,
+                TKeyWrapper,
+                TDto,
+                TConcurrencyToken
+            >
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(
+        protected BaseConcurrentCrudDtoRepoWithKeyWrapper(
             DbContext dbContext,
             IMapper mapper,
-            IPaginationProcessor paginationProcessor
+            IPaginationProcessor paginationProcessor,
+            CrudConcurrencyConfiguration concurrencyConfiguration
         )
-            : base(dbContext, mapper, paginationProcessor) { }
+            : base(dbContext, mapper, paginationProcessor, concurrencyConfiguration) { }
     }
 }

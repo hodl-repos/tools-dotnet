@@ -36,6 +36,13 @@ namespace tools_dotnet.Utility
                 case var _ when exception is PaymentRequiredException:
                     return new ApiPaymentRequiredError(httpContext.Request.Path);
 
+                case var _ when exception is ConcurrentModificationException concurrencyException:
+                    return new ApiConcurrentModificationError(
+                        httpContext.Request.Path,
+                        concurrencyException.DbConcurrencyStamp,
+                        concurrencyException.RequestConcurrencyStamp
+                    );
+
                 case var _ when exception is DependentItemException dpEx:
                     return ApiDependentItemError.CreateApiDependentItemError(
                         httpContext.Request.Path,
