@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -30,6 +31,12 @@ namespace tools_dotnet.Pagination.Services
         private readonly IReadOnlyList<IPaginationFilterExpressionProvider> _filterExpressionProviders;
         private readonly IReadOnlyList<IPaginationCustomFilterMethods> _customFilterMethods;
         private readonly IReadOnlyList<IPaginationCustomSortsMethods> _customSortMethods;
+        private readonly ConcurrentDictionary<MemberPathCacheKey, MemberPathCacheEntry> _memberPathCache =
+            new();
+        private readonly ConcurrentDictionary<CustomMethodCacheKey, FilterMethodCacheEntry> _customFilterMethodCache =
+            new();
+        private readonly ConcurrentDictionary<CustomMethodCacheKey, SortMethodCacheEntry> _customSortMethodCache =
+            new();
 
         /// <summary>
         /// Creates a pagination processor.
@@ -210,14 +217,14 @@ namespace tools_dotnet.Pagination.Services
             foreach (var customFilterMethods in _customFilterMethods)
             {
                 if (
-                    TryInvokeCustomFilterMethod(
-                        query,
-                        customFilterMethods,
-                        field,
-                        filterTerm,
-                        dataForCustomMethods,
-                        out filteredQuery
-                    )
+                        TryInvokeCustomFilterMethod(
+                            query,
+                            customFilterMethods,
+                            field,
+                            filterTerm,
+                            dataForCustomMethods,
+                            out filteredQuery
+                        )
                 )
                 {
                     return true;
@@ -227,7 +234,7 @@ namespace tools_dotnet.Pagination.Services
             return false;
         }
 
-        private static bool TryInvokeCustomFilterMethod<TEntity>(
+        private bool TryInvokeCustomFilterMethod<TEntity>(
             IQueryable<TEntity> query,
             IPaginationCustomFilterMethods customFilterMethods,
             string methodName,
@@ -238,115 +245,40 @@ namespace tools_dotnet.Pagination.Services
         {
             filteredQuery = query;
 
-            var methods = customFilterMethods
-                .GetType()
-                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                .Where(x => string.Equals(x.Name, methodName, StringComparison.OrdinalIgnoreCase));
+            var methodEntry = GetCustomFilterMethodEntry<TEntity>(customFilterMethods, methodName);
 
-            foreach (var method in methods)
+            if (!methodEntry.Found || methodEntry.Method == null)
             {
-                if (
-                    !TryCloseCustomMethod<TEntity>(method, out var closedMethod)
-                    || closedMethod == null
-                )
-                {
-                    continue;
-                }
+                return false;
+            }
 
-                var parameters = closedMethod.GetParameters();
+            var args = new object?[methodEntry.ParameterCount];
+            args[0] = query;
 
-                if (parameters.Length == 0 || parameters.Length > 4)
-                {
-                    continue;
-                }
+            if (methodEntry.ParameterCount >= 2)
+            {
+                args[1] = filterTerm.Operator.Id;
+            }
 
-                if (!parameters[0].ParameterType.IsAssignableFrom(typeof(IQueryable<TEntity>)))
-                {
-                    continue;
-                }
+            if (methodEntry.ParameterCount >= 3 && methodEntry.ValuesParameterType != null)
+            {
+                args[2] = CreateValuesArgument(methodEntry.ValuesParameterType, filterTerm.Values);
+            }
 
-                if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(string))
-                {
-                    continue;
-                }
+            if (methodEntry.ParameterCount == 4)
+            {
+                args[3] = dataForCustomMethods;
+            }
 
-                if (
-                    parameters.Length >= 3
-                    && !IsSupportedValuesParameter(parameters[2].ParameterType)
-                )
-                {
-                    continue;
-                }
+            var result = methodEntry.Method.Invoke(customFilterMethods, args);
 
-                if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
-                {
-                    continue;
-                }
-
-                if (!typeof(IQueryable<TEntity>).IsAssignableFrom(closedMethod.ReturnType))
-                {
-                    continue;
-                }
-
-                var args = new object?[parameters.Length];
-                args[0] = query;
-
-                if (parameters.Length >= 2)
-                {
-                    args[1] = filterTerm.Operator.Id;
-                }
-
-                if (parameters.Length >= 3)
-                {
-                    args[2] = CreateValuesArgument(parameters[2].ParameterType, filterTerm.Values);
-                }
-
-                if (parameters.Length == 4)
-                {
-                    args[3] = dataForCustomMethods;
-                }
-
-                var result = closedMethod.Invoke(customFilterMethods, args);
-
-                if (result is IQueryable<TEntity> typedResult)
-                {
-                    filteredQuery = typedResult;
-                    return true;
-                }
+            if (result is IQueryable<TEntity> typedResult)
+            {
+                filteredQuery = typedResult;
+                return true;
             }
 
             return false;
-        }
-
-        private static bool TryCloseCustomMethod<TEntity>(
-            MethodInfo method,
-            out MethodInfo? closedMethod
-        )
-        {
-            if (!method.IsGenericMethodDefinition)
-            {
-                closedMethod = method;
-                return true;
-            }
-
-            var genericArguments = method.GetGenericArguments();
-
-            if (genericArguments.Length != 1)
-            {
-                closedMethod = null;
-                return false;
-            }
-
-            try
-            {
-                closedMethod = method.MakeGenericMethod(typeof(TEntity));
-                return true;
-            }
-            catch (ArgumentException)
-            {
-                closedMethod = null;
-                return false;
-            }
         }
 
         private static bool IsSupportedValuesParameter(Type valuesParameterType)
@@ -405,10 +337,10 @@ namespace tools_dotnet.Pagination.Services
                 var parameterExpression = Expression.Parameter(typeof(TEntity), "entity");
 
                 if (
-                    !TryBuildMemberExpression(
-                        parameterExpression,
-                        sort.Field,
-                        out var memberExpression,
+                        !TryBuildMemberExpression(
+                            parameterExpression,
+                            sort.Field,
+                            out var memberExpression,
                         applyFilterRules: false
                     )
                     || memberExpression == null
@@ -500,7 +432,7 @@ namespace tools_dotnet.Pagination.Services
             return false;
         }
 
-        private static bool TryInvokeCustomSortMethod<TEntity>(
+        private bool TryInvokeCustomSortMethod<TEntity>(
             IQueryable<TEntity> query,
             IPaginationCustomSortsMethods customSortMethods,
             string methodName,
@@ -512,78 +444,37 @@ namespace tools_dotnet.Pagination.Services
         {
             sortedQuery = query;
 
-            var methods = customSortMethods
-                .GetType()
-                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                .Where(x => string.Equals(x.Name, methodName, StringComparison.OrdinalIgnoreCase));
+            var methodEntry = GetCustomSortMethodEntry<TEntity>(customSortMethods, methodName);
 
-            foreach (var method in methods)
+            if (!methodEntry.Found || methodEntry.Method == null)
             {
-                if (
-                    !TryCloseCustomMethod<TEntity>(method, out var closedMethod)
-                    || closedMethod == null
-                )
-                {
-                    continue;
-                }
+                return false;
+            }
 
-                var parameters = closedMethod.GetParameters();
+            var args = new object?[methodEntry.ParameterCount];
+            args[0] = query;
 
-                if (parameters.Length == 0 || parameters.Length > 4)
-                {
-                    continue;
-                }
+            if (methodEntry.ParameterCount >= 2)
+            {
+                args[1] = useThenBy;
+            }
 
-                if (!parameters[0].ParameterType.IsAssignableFrom(typeof(IQueryable<TEntity>)))
-                {
-                    continue;
-                }
+            if (methodEntry.ParameterCount >= 3)
+            {
+                args[2] = descending;
+            }
 
-                if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(bool))
-                {
-                    continue;
-                }
+            if (methodEntry.ParameterCount == 4)
+            {
+                args[3] = dataForCustomMethods;
+            }
 
-                if (parameters.Length >= 3 && parameters[2].ParameterType != typeof(bool))
-                {
-                    continue;
-                }
+            var result = methodEntry.Method.Invoke(customSortMethods, args);
 
-                if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
-                {
-                    continue;
-                }
-
-                if (!typeof(IQueryable<TEntity>).IsAssignableFrom(closedMethod.ReturnType))
-                {
-                    continue;
-                }
-
-                var args = new object?[parameters.Length];
-                args[0] = query;
-
-                if (parameters.Length >= 2)
-                {
-                    args[1] = useThenBy;
-                }
-
-                if (parameters.Length >= 3)
-                {
-                    args[2] = descending;
-                }
-
-                if (parameters.Length == 4)
-                {
-                    args[3] = dataForCustomMethods;
-                }
-
-                var result = closedMethod.Invoke(customSortMethods, args);
-
-                if (result is IQueryable<TEntity> typedResult)
-                {
-                    sortedQuery = typedResult;
-                    return true;
-                }
+            if (result is IQueryable<TEntity> typedResult)
+            {
+                sortedQuery = typedResult;
+                return true;
             }
 
             return false;
@@ -744,59 +635,282 @@ namespace tools_dotnet.Pagination.Services
             }
         }
 
-        private static bool TryBuildMemberExpression(
+        private bool TryBuildMemberExpression(
             Expression source,
             string fieldPath,
             out Expression? memberExpression,
             bool applyFilterRules = true
         )
         {
+            var memberPath = _memberPathCache.GetOrAdd(
+                new MemberPathCacheKey(
+                    source.Type,
+                    NormalizeCacheLookupKey(fieldPath),
+                    applyFilterRules
+                ),
+                static cacheKey => BuildMemberPath(cacheKey)
+            );
+
+            if (!memberPath.Found)
+            {
+                memberExpression = null;
+                return false;
+            }
+
             memberExpression = source;
 
-            var fieldSegments = fieldPath.Split(
+            foreach (var member in memberPath.Members)
+            {
+                memberExpression = CreateMemberAccessExpression(memberExpression, member);
+            }
+
+            return true;
+        }
+
+        private FilterMethodCacheEntry GetCustomFilterMethodEntry<TEntity>(
+            IPaginationCustomFilterMethods customFilterMethods,
+            string methodName
+        )
+        {
+            return _customFilterMethodCache.GetOrAdd(
+                new CustomMethodCacheKey(
+                    customFilterMethods.GetType(),
+                    typeof(TEntity),
+                    NormalizeCacheLookupKey(methodName)
+                ),
+                static cacheKey => ResolveCustomFilterMethod(cacheKey)
+            );
+        }
+
+        private SortMethodCacheEntry GetCustomSortMethodEntry<TEntity>(
+            IPaginationCustomSortsMethods customSortMethods,
+            string methodName
+        )
+        {
+            return _customSortMethodCache.GetOrAdd(
+                new CustomMethodCacheKey(
+                    customSortMethods.GetType(),
+                    typeof(TEntity),
+                    NormalizeCacheLookupKey(methodName)
+                ),
+                static cacheKey => ResolveCustomSortMethod(cacheKey)
+            );
+        }
+
+        private static MemberPathCacheEntry BuildMemberPath(MemberPathCacheKey cacheKey)
+        {
+            var fieldSegments = cacheKey.FieldPath.Split(
                 '.',
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
             );
 
             if (fieldSegments.Length == 0)
             {
-                memberExpression = null;
-                return false;
+                return MemberPathCacheEntry.Missing;
             }
+
+            var members = new MemberInfo[fieldSegments.Length];
+            var currentType = cacheKey.SourceType;
 
             for (var i = 0; i < fieldSegments.Length; i++)
             {
                 var segment = fieldSegments[i];
                 var isLeafSegment = i == fieldSegments.Length - 1;
-                var property = memberExpression
-                    .Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x =>
-                        MatchesSegment(x, segment, applyFilterRules, isLeafSegment)
-                    );
+                var member = FindMatchingMember(
+                    currentType,
+                    segment,
+                    cacheKey.ApplyFilterRules,
+                    isLeafSegment
+                );
 
-                if (property != null)
+                if (member == null)
                 {
-                    memberExpression = Expression.Property(memberExpression, property);
+                    return MemberPathCacheEntry.Missing;
+                }
+
+                members[i] = member;
+                currentType = GetMemberType(member);
+            }
+
+            return new MemberPathCacheEntry(members);
+        }
+
+        private static MemberInfo? FindMatchingMember(
+            Type sourceType,
+            string segment,
+            bool applyFilterRules,
+            bool isLeafSegment
+        )
+        {
+            var property = sourceType
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
+
+            if (property != null)
+            {
+                return property;
+            }
+
+            return sourceType
+                .GetFields(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
+        }
+
+        private static FilterMethodCacheEntry ResolveCustomFilterMethod(
+            CustomMethodCacheKey cacheKey
+        )
+        {
+            var queryableType = typeof(IQueryable<>).MakeGenericType(cacheKey.EntityType);
+
+            foreach (
+                var method in cacheKey
+                    .ContainerType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(x =>
+                        string.Equals(x.Name, cacheKey.MethodName, StringComparison.OrdinalIgnoreCase)
+                    )
+            )
+            {
+                if (
+                    !TryCloseCustomMethod(method, cacheKey.EntityType, out var closedMethod)
+                    || closedMethod == null
+                )
+                {
                     continue;
                 }
 
-                var field = memberExpression
-                    .Type.GetFields(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x =>
-                        MatchesSegment(x, segment, applyFilterRules, isLeafSegment)
-                    );
+                var parameters = closedMethod.GetParameters();
 
-                if (field != null)
+                if (parameters.Length == 0 || parameters.Length > 4)
                 {
-                    memberExpression = Expression.Field(memberExpression, field);
                     continue;
                 }
 
-                memberExpression = null;
+                if (!parameters[0].ParameterType.IsAssignableFrom(queryableType))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(string))
+                {
+                    continue;
+                }
+
+                if (
+                    parameters.Length >= 3
+                    && !IsSupportedValuesParameter(parameters[2].ParameterType)
+                )
+                {
+                    continue;
+                }
+
+                if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
+                {
+                    continue;
+                }
+
+                if (!closedMethod.ReturnType.IsAssignableTo(queryableType))
+                {
+                    continue;
+                }
+
+                return new FilterMethodCacheEntry(
+                    closedMethod,
+                    parameters.Length,
+                    parameters.Length >= 3 ? parameters[2].ParameterType : null
+                );
+            }
+
+            return FilterMethodCacheEntry.Missing;
+        }
+
+        private static SortMethodCacheEntry ResolveCustomSortMethod(CustomMethodCacheKey cacheKey)
+        {
+            var queryableType = typeof(IQueryable<>).MakeGenericType(cacheKey.EntityType);
+
+            foreach (
+                var method in cacheKey
+                    .ContainerType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(x =>
+                        string.Equals(x.Name, cacheKey.MethodName, StringComparison.OrdinalIgnoreCase)
+                    )
+            )
+            {
+                if (
+                    !TryCloseCustomMethod(method, cacheKey.EntityType, out var closedMethod)
+                    || closedMethod == null
+                )
+                {
+                    continue;
+                }
+
+                var parameters = closedMethod.GetParameters();
+
+                if (parameters.Length == 0 || parameters.Length > 4)
+                {
+                    continue;
+                }
+
+                if (!parameters[0].ParameterType.IsAssignableFrom(queryableType))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 2 && parameters[1].ParameterType != typeof(bool))
+                {
+                    continue;
+                }
+
+                if (parameters.Length >= 3 && parameters[2].ParameterType != typeof(bool))
+                {
+                    continue;
+                }
+
+                if (parameters.Length == 4 && parameters[3].ParameterType != typeof(object[]))
+                {
+                    continue;
+                }
+
+                if (!closedMethod.ReturnType.IsAssignableTo(queryableType))
+                {
+                    continue;
+                }
+
+                return new SortMethodCacheEntry(closedMethod, parameters.Length);
+            }
+
+            return SortMethodCacheEntry.Missing;
+        }
+
+        private static bool TryCloseCustomMethod(
+            MethodInfo method,
+            Type entityType,
+            out MethodInfo? closedMethod
+        )
+        {
+            if (!method.IsGenericMethodDefinition)
+            {
+                closedMethod = method;
+                return true;
+            }
+
+            var genericArguments = method.GetGenericArguments();
+
+            if (genericArguments.Length != 1)
+            {
+                closedMethod = null;
                 return false;
             }
 
-            return true;
+            try
+            {
+                closedMethod = method.MakeGenericMethod(entityType);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                closedMethod = null;
+                return false;
+            }
         }
 
         private static bool MatchesSegment(
@@ -837,6 +951,38 @@ namespace tools_dotnet.Pagination.Services
                 : attribute.CanSortSubProperties;
         }
 
+        private static Expression CreateMemberAccessExpression(
+            Expression source,
+            MemberInfo memberInfo
+        )
+        {
+            return memberInfo switch
+            {
+                PropertyInfo propertyInfo => Expression.Property(source, propertyInfo),
+                FieldInfo fieldInfo => Expression.Field(source, fieldInfo),
+                _ => throw new InvalidOperationException(
+                    $"Unsupported member type '{memberInfo.MemberType}'."
+                ),
+            };
+        }
+
+        private static Type GetMemberType(MemberInfo memberInfo)
+        {
+            return memberInfo switch
+            {
+                PropertyInfo propertyInfo => propertyInfo.PropertyType,
+                FieldInfo fieldInfo => fieldInfo.FieldType,
+                _ => throw new InvalidOperationException(
+                    $"Unsupported member type '{memberInfo.MemberType}'."
+                ),
+            };
+        }
+
+        private static string NormalizeCacheLookupKey(string value)
+        {
+            return value.Trim().ToUpperInvariant();
+        }
+
         private static object InvokeOrderMethod(
             MethodInfo orderMethod,
             Type entityType,
@@ -857,6 +1003,73 @@ namespace tools_dotnet.Pagination.Services
                     && method.IsGenericMethodDefinition
                     && method.GetParameters().Length == 2
                 );
+        }
+
+        private readonly record struct MemberPathCacheKey(
+            Type SourceType,
+            string FieldPath,
+            bool ApplyFilterRules
+        );
+
+        private readonly record struct CustomMethodCacheKey(
+            Type ContainerType,
+            Type EntityType,
+            string MethodName
+        );
+
+        private sealed class MemberPathCacheEntry
+        {
+            public static readonly MemberPathCacheEntry Missing = new(Array.Empty<MemberInfo>());
+
+            public MemberPathCacheEntry(IReadOnlyList<MemberInfo> members)
+            {
+                Members = members;
+            }
+
+            public IReadOnlyList<MemberInfo> Members { get; }
+
+            public bool Found => Members.Count > 0;
+        }
+
+        private sealed class FilterMethodCacheEntry
+        {
+            public static readonly FilterMethodCacheEntry Missing = new(null, 0, null);
+
+            public FilterMethodCacheEntry(
+                MethodInfo? method,
+                int parameterCount,
+                Type? valuesParameterType
+            )
+            {
+                Method = method;
+                ParameterCount = parameterCount;
+                ValuesParameterType = valuesParameterType;
+            }
+
+            public MethodInfo? Method { get; }
+
+            public int ParameterCount { get; }
+
+            public Type? ValuesParameterType { get; }
+
+            public bool Found => Method != null;
+        }
+
+        private sealed class SortMethodCacheEntry
+        {
+            public static readonly SortMethodCacheEntry Missing = new(null, 0);
+
+            public SortMethodCacheEntry(MethodInfo? method, int parameterCount)
+            {
+                Method = method;
+                ParameterCount = parameterCount;
+            }
+
+            public MethodInfo? Method { get; }
+
+            public int ParameterCount { get; }
+
+            public bool Found => Method != null;
         }
     }
 }

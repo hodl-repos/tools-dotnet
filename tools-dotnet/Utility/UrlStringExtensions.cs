@@ -37,7 +37,11 @@ namespace tools_dotnet.Utility
 
         public static string[] ExtractDomain(this string[] urlList)
         {
-            return urlList.Select(ExtractDomain).Where(e => !string.IsNullOrEmpty(e)).Select(e => e!).ToArray();
+            return urlList
+                .Select(ExtractDomain)
+                .Where(e => !string.IsNullOrEmpty(e))
+                .Select(e => e!)
+                .ToArray();
         }
 
         public static string SanitizeWebUrl(this string url)
@@ -71,7 +75,6 @@ namespace tools_dotnet.Utility
                 return uri.GetLeftPart(UriPartial.Path);
             }
             catch (UriFormatException)
-
             {
                 // If the input is not a valid URI, return it unchanged
                 return url;
