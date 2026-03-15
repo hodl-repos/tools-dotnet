@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Shouldly;
 using tools_dotnet.Utility;
@@ -20,16 +21,7 @@ namespace tools_dotnet.Tests.UtilityTest
 
         private static readonly ConversionExpectation[] Cases =
         [
-            new(
-                null,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                string.Empty
-            ),
+            new(null, null, null, null, null, null, null, null),
             new(
                 string.Empty,
                 string.Empty,
@@ -132,7 +124,7 @@ namespace tools_dotnet.Tests.UtilityTest
             ),
         ];
 
-        private static readonly string[] OldCompatibilityCases =
+        private static readonly string?[] OldCompatibilityCases =
         [
             "fooBar",
             "PascalCase",
@@ -145,6 +137,8 @@ namespace tools_dotnet.Tests.UtilityTest
             "IsoAlpha2",
             "Test1",
             "Http2XX",
+            null,
+            "",
         ];
 
         [TestCaseSource(nameof(Cases))]
@@ -160,7 +154,7 @@ namespace tools_dotnet.Tests.UtilityTest
         }
 
         [TestCaseSource(nameof(OldCompatibilityCases))]
-        public void ToSnakeCase_ShouldMatchOldSnakeCase_ForDigitAndCompatibilityCases(string input)
+        public void ToSnakeCase_ShouldMatchOldSnakeCase_ForDigitAndCompatibilityCases(string? input)
         {
             input.ToSnakeCase().ShouldBe(ToOldSnakeCase(input));
         }

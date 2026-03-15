@@ -29,7 +29,7 @@ namespace tools_dotnet.Utility
         private static string ConvertDelimitedCase(string? value, char separator, bool upper)
         {
             if (string.IsNullOrEmpty(value))
-                return value ?? string.Empty;
+                return value;
 
             int length = ComputeDelimitedLength(value.AsSpan());
 
@@ -97,7 +97,7 @@ namespace tools_dotnet.Utility
         private static string ConvertPascalOrCamel(string? value, bool pascal)
         {
             if (string.IsNullOrEmpty(value))
-                return value ?? string.Empty;
+                return value;
 
             int length = ComputeJoinedLength(value.AsSpan());
 
@@ -270,3 +270,4 @@ namespace tools_dotnet.Utility
             type == CharType.Lower ? (char)(c & ~0x20) : c;
     }
 }
+
