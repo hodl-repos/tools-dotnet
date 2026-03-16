@@ -1,6 +1,6 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Sieve.Services;
+using tools_dotnet.Pagination.Services;
 using System.Linq.Expressions;
 using System;
 using System.Threading.Tasks;
@@ -15,41 +15,73 @@ namespace tools_dotnet.Dao.Paging.Abstract
     {
         protected readonly DbContext _dbContext;
         protected readonly IMapper _mapper;
-        protected readonly ISieveProcessor _sieveProcessor;
+        protected readonly IPaginationProcessor _paginationProcessor;
 
-        public BaseSortFilterAndPageDtoRepo(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
+        public BaseSortFilterAndPageDtoRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _sieveProcessor = sieveProcessor ?? throw new ArgumentNullException(nameof(sieveProcessor));
+            _paginationProcessor = paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiSieve, _sieveProcessor);
+            return await query.SortFilterAndPageAsync(
+                apiPagination,
+                _paginationProcessor,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().Where(filter).AsNoTracking();
 
-            return await query.SortFilterAndPageAsync(apiSieve, _sieveProcessor);
+            return await query.SortFilterAndPageAsync(
+                apiPagination,
+                _paginationProcessor,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().AsNoTracking().Where(filter);
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
             var query = _dbContext.Set<TEntity>().AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
         }
     }
 }

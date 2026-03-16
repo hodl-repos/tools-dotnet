@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
@@ -6,13 +6,17 @@ namespace tools_dotnet.Errors
 {
     public class ApiValidationError : GenericApiError
     {
-        public IEnumerable<ApiPropertyValidationFailure> Errors { get; set; } = new List<ApiPropertyValidationFailure>();
+        public IEnumerable<ApiPropertyValidationFailure> Errors { get; set; } =
+            new List<ApiPropertyValidationFailure>();
 
-        protected ApiValidationError()
-        { }
+        protected ApiValidationError() { }
 
-        public ApiValidationError(FluentValidation.ValidationException ex) : base("One or more validation errors occurred",
-            "Please refer to the errors property for additional details", HttpStatusCode.BadRequest)
+        public ApiValidationError(FluentValidation.ValidationException ex)
+            : base(
+                "One or more validation errors occurred",
+                "Please refer to the errors property for additional details",
+                HttpStatusCode.BadRequest
+            )
         {
             var errorList = new List<ApiPropertyValidationFailure>();
 
@@ -20,7 +24,9 @@ namespace tools_dotnet.Errors
             {
                 foreach (var item in ex.Errors)
                 {
-                    errorList.Add(new ApiPropertyValidationFailure(item.PropertyName, item.ErrorMessage));
+                    errorList.Add(
+                        new ApiPropertyValidationFailure(item.PropertyName, item.ErrorMessage)
+                    );
                 }
             }
             else
@@ -31,13 +37,19 @@ namespace tools_dotnet.Errors
             Errors = errorList;
         }
 
-        public ApiValidationError(string instance, FluentValidation.ValidationException ex) : this(ex)
+        public ApiValidationError(string instance, FluentValidation.ValidationException ex)
+            : this(ex)
         {
             Instance = instance;
         }
 
-        public ApiValidationError(string instance, IEnumerable<ApiPropertyValidationFailure> errors) : base("One or more validation errors occurred",
-            "Please refer to the errors property for additional details", instance, HttpStatusCode.BadRequest)
+        public ApiValidationError(string instance, IEnumerable<ApiPropertyValidationFailure> errors)
+            : base(
+                "One or more validation errors occurred",
+                "Please refer to the errors property for additional details",
+                instance,
+                HttpStatusCode.BadRequest
+            )
         {
             Errors = errors;
         }

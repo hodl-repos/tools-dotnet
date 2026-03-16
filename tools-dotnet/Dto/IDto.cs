@@ -1,6 +1,4 @@
-﻿namespace tools_dotnet.Dto
+namespace tools_dotnet.Dto
 {
-    public interface IDto
-    {
-    }
+    public interface IDto { }
 }

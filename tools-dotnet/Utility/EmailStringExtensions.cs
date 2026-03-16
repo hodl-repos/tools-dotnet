@@ -1,8 +1,11 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Net.Mail;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>
+    /// Provides extension methods for extracting and validating email addresses from strings.
+    /// </summary>
     public static class EmailStringExtensions
     {
         /// <summary>
@@ -10,10 +13,16 @@ namespace tools_dotnet.Utility
         /// </summary>
         public static string[] ExtractEmailAdresses(params string?[] input)
         {
-            return string.Join(',', input.Where(e => !string.IsNullOrEmpty(e?.Trim())).Select(e => e!.Trim()).ToArray())
-                    .ExtractEmailAdresses()
-                    .Distinct()
-                    .ToArray();
+            return string.Join(
+                    ',',
+                    input
+                        .Where(e => !string.IsNullOrEmpty(e?.Trim()))
+                        .Select(e => e!.Trim())
+                        .ToArray()
+                )
+                .ExtractEmailAdresses()
+                .Distinct()
+                .ToArray();
         }
 
         /// <summary>
@@ -28,10 +37,7 @@ namespace tools_dotnet.Utility
                 return [];
             }
 
-            var collection = new MailAddressCollection
-            {
-                input
-            };
+            var collection = new MailAddressCollection { input };
 
             return collection.Select(e => e.Address).ToArray();
         }

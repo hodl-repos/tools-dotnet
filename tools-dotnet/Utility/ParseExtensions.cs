@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Linq;
 namespace tools_dotnet.Utility
 {
     /// <summary>
-    /// Small helper functions to help convert strings to longs or UUIDs in Sieve customer methods
+    /// Small helper functions to help convert strings to longs or UUIDs in Pagination custom methods
     /// </summary>
     public static class ParseExtensions
     {
@@ -33,7 +33,7 @@ namespace tools_dotnet.Utility
             /// <summary>
             /// If any failure occurred, return an empty list
             /// </summary>
-            ReturnEmpty
+            ReturnEmpty,
         }
 
         /// <summary>
@@ -43,7 +43,8 @@ namespace tools_dotnet.Utility
         public static List<T>? ParseValues<T>(
             IEnumerable<string> values,
             ParseFailureBehavior onFailure = ParseFailureBehavior.ReturnNull,
-            IFormatProvider? provider = null)
+            IFormatProvider? provider = null
+        )
             where T : IParsable<T>
         {
             provider ??= CultureInfo.InvariantCulture;
@@ -63,7 +64,9 @@ namespace tools_dotnet.Utility
                     switch (onFailure)
                     {
                         case ParseFailureBehavior.Throw:
-                            throw new FormatException($"Could not parse '{raw}' as {typeof(T).Name}.");
+                            throw new FormatException(
+                                $"Could not parse '{raw}' as {typeof(T).Name}."
+                            );
                         case ParseFailureBehavior.IgnoreValue:
                             continue;
                         case ParseFailureBehavior.ReturnNull:

@@ -1,99 +1,167 @@
-﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using Sieve.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dto;
 using tools_dotnet.Exceptions;
+using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
 using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
-    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto, TInputDto> :
-        BaseCrudRepo<TEntity, TIdType>,
-        ICrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
+    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
+        : BaseCrudRepo<TEntity, TIdType>,
+            ICrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
-        protected BaseCrudDtoRepo(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
-            : base(dbContext, mapper, sieveProcessor)
-        {
-        }
+        protected BaseCrudDtoRepo(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
 
-        public virtual async Task<TIdType> AddAsync(TInputDto item)
+        public virtual async Task<TIdType> AddAsync(
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
             var entity = _mapper.Map<TEntity>(item);
 
-            return await AddAsync(entity);
+            return await AddAsync(entity, cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+                .AsNoTracking();
 
             return await query
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
-
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await GetAllDtoAsync(
+                apiPagination,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+                .AsNoTracking();
+
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        )
+        {
+            return await GetAllDtoAsync(
+                apiPagination,
+                filter,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .Where(filter);
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<TDto?> FindDtoAsync(Expression<Func<TEntity, bool>> filter, bool throwOnMultipleFound = true, bool ignoreDeletedWithAuditable = true)
+        public virtual async Task<TDto?> FindDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            bool throwOnMultipleFound = true,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), ignoreDeletedWithAuditable)
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .Where(filter)
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider);
 
             if (throwOnMultipleFound)
             {
-                return await query.SingleOrDefaultAsync();
+                return await query.SingleOrDefaultAsync(cancellationToken);
             }
-            else
-            {
-                return await query.FirstOrDefaultAsync();
-            }
+
+            return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
-        public virtual async Task<TDto> GetByIdDtoAsync(TIdType id)
+        public virtual async Task<TDto> GetByIdDtoAsync(
+            TIdType id,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
+            var dto = await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    softDeleteQueryMode
+                )
                 .AsNoTracking()
                 .Where(e => e.Id.Equals(id))
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
             {
@@ -103,41 +171,42 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
-        public virtual async Task UpdateAsync(TInputDto item)
+        public virtual async Task UpdateAsync(
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dbEntity = await GetByIdAsync(item.Id);
-
+            var dbEntity = await GetByIdAsync(
+                item.Id,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
             _mapper.Map(item, dbEntity);
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx)
-                {
-                    switch (pgEx.SqlState)
-                    {
-                        case PostgresErrorCodes.ForeignKeyViolation:
-                            throw new DependentItemException(pgEx.Message, false);
-                        case PostgresErrorCodes.UniqueViolation:
-                            throw new ConflictingItemException(pgEx.Message);
-                    }
-                }
-
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
                 throw;
             }
         }
     }
 
-    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto> : BaseCrudDtoRepo<TEntity, TIdType, TDto, TDto>
+    public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto>
+        : BaseCrudDtoRepo<TEntity, TIdType, TDto, TDto>,
+            ICrudDtoRepo<TEntity, TIdType, TDto>
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
     {
-        protected BaseCrudDtoRepo(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
-        {
-        }
+        protected BaseCrudDtoRepo(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
     }
 }

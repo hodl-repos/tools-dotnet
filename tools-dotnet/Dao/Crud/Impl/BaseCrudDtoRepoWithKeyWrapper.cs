@@ -1,81 +1,146 @@
-﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using Sieve.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using tools_dotnet.Dao.Entity;
 using tools_dotnet.Dao.KeyWrapper;
 using tools_dotnet.Exceptions;
+using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
 using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
-    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto> :
-        BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
-        ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
+    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
+        : BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
+            ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
         where TEntity : class, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
         where TInputDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor)
-            : base(dbContext, mapper, sieveProcessor)
-        {
-        }
+        protected BaseCrudDtoRepoWithKeyWrapper(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
 
-        public virtual async Task<TKeyWrapper> AddAsync(TKeyWrapper keyWrapper, TInputDto item)
+        public virtual async Task<TKeyWrapper> AddAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
             var entity = _mapper.Map<TEntity>(item);
 
-            return await AddAsync(keyWrapper, entity);
+            return await AddAsync(keyWrapper, entity, cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync()
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
+            Expression<Func<TEntity, bool>> filter,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>())
+            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .Where(filter)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            CancellationToken cancellationToken = default
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>()).AsNoTracking();
-
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await GetAllDtoAsync(
+                apiPagination,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(IApiSieve apiSieve, Expression<Func<TEntity, bool>> filter)
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>())
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+                .AsNoTracking();
+
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            CancellationToken cancellationToken = default
+        )
+        {
+            return await GetAllDtoAsync(
+                apiPagination,
+                filter,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
+        }
+
+        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+            IApiPagination apiPagination,
+            Expression<Func<TEntity, bool>> filter,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
                 .Where(filter)
                 .AsNoTracking();
 
-            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(apiSieve, _sieveProcessor, _mapper);
+            return await query.SortFilterAndPageWithProjectToAsync<TEntity, TDto>(
+                apiPagination,
+                _paginationProcessor,
+                _mapper,
+                cancellationToken: cancellationToken
+            );
         }
 
-        public virtual async Task<TDto> GetByIdDtoAsync(TKeyWrapper keyWrapper)
+        public virtual async Task<TDto> GetByIdDtoAsync(
+            TKeyWrapper keyWrapper,
+            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dto = await SetupQueryModifications(_dbContext.Set<TEntity>(), false)
+            var dto = await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    softDeleteQueryMode
+                )
                 .AsNoTracking()
                 .Where(keyWrapper.GetKeyFilter())
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             if (dto == null)
             {
@@ -85,42 +150,43 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
-        public virtual async Task UpdateAsync(TKeyWrapper keyWrapper, TInputDto item)
+        public virtual async Task UpdateAsync(
+            TKeyWrapper keyWrapper,
+            TInputDto item,
+            CancellationToken cancellationToken = default
+        )
         {
-            var dbEntity = await GetByIdInternalAsync(keyWrapper);
-
+            var dbEntity = await GetByIdInternalAsync(
+                keyWrapper,
+                SoftDeleteQueryMode.ActiveOnly,
+                cancellationToken
+            );
             _mapper.Map(item, dbEntity);
 
             try
             {
-                await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx)
-                {
-                    switch (pgEx.SqlState)
-                    {
-                        case PostgresErrorCodes.ForeignKeyViolation:
-                            throw new DependentItemException(pgEx.Message, false);
-                        case PostgresErrorCodes.UniqueViolation:
-                            throw new ConflictingItemException(pgEx.Message);
-                    }
-                }
-
+                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
                 throw;
             }
         }
     }
 
-    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto> : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>
+    public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
+        : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>,
+            ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
         where TEntity : class, IEntity
-
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
-        protected BaseCrudDtoRepoWithKeyWrapper(DbContext dbContext, IMapper mapper, ISieveProcessor sieveProcessor) : base(dbContext, mapper, sieveProcessor)
-        {
-        }
+        protected BaseCrudDtoRepoWithKeyWrapper(
+            DbContext dbContext,
+            IMapper mapper,
+            IPaginationProcessor paginationProcessor
+        )
+            : base(dbContext, mapper, paginationProcessor) { }
     }
 }

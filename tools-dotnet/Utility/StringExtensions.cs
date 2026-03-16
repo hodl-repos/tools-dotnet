@@ -1,28 +1,25 @@
-﻿using System;
+using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>
+    /// Provides extension methods for string manipulation and analysis.
+    /// Also, see: <seealso cref="tools_dotnet.Utility.StringCaseExtensions"/>
+    /// </summary>
     public static class StringExtensions
     {
-        /// <summary>
-        /// Converts the given string to snake_case format
-        /// </summary>
-        public static string? ToSnakeCase(this string? input, char replaceChar = '_')
-        {
-            if (string.IsNullOrEmpty(input)) { return input; }
-
-            var startUnderscores = Regex.Match(input, @"^_+");
-            return startUnderscores + Regex.Replace(input, @"([a-z0-9])([A-Z])", "$1" + replaceChar + "$2").ToLower();
-        }
-
         /// <summary>
         /// uses string.Join but first string.IsNullOrEmpty to remove all useless string
         /// </summary>
         public static string StringJoinWhereNotEmpty(string splitter, params string?[] strings)
         {
-            return string.Join(splitter, strings.Where(value => !string.IsNullOrEmpty(value?.Trim())).DefaultIfEmpty(string.Empty));
+            return string.Join(
+                splitter,
+                strings
+                    .Where(value => !string.IsNullOrEmpty(value?.Trim()))
+                    .DefaultIfEmpty(string.Empty)
+            );
         }
 
         /// <summary>
@@ -61,7 +58,8 @@ namespace tools_dotnet.Utility
                 int lEnd = Math.Min(i + lSearchRange + 1, lLen2);
                 for (int j = lStart; j < lEnd; ++j)
                 {
-                    if (lMatched2[j]) continue;
+                    if (lMatched2[j])
+                        continue;
                     if (aString1[i] != aString2[j])
                         continue;
                     lMatched1[i] = true;
@@ -70,14 +68,17 @@ namespace tools_dotnet.Utility
                     break;
                 }
             }
-            if (lNumCommon == 0) return 0.0;
+            if (lNumCommon == 0)
+                return 0.0;
 
             int lNumHalfTransposed = 0;
             int k = 0;
             for (int i = 0; i < lLen1; ++i)
             {
-                if (!lMatched1[i]) continue;
-                while (!lMatched2[k]) ++k;
+                if (!lMatched1[i])
+                    continue;
+                while (!lMatched2[k])
+                    ++k;
                 if (aString1[i] != aString2[k])
                     ++lNumHalfTransposed;
                 ++k;
@@ -85,9 +86,12 @@ namespace tools_dotnet.Utility
             int lNumTransposed = lNumHalfTransposed / 2;
 
             double lNumCommonD = lNumCommon;
-            double lWeight = (lNumCommonD / lLen1
-                             + lNumCommonD / lLen2
-                             + (lNumCommon - lNumTransposed) / lNumCommonD) / 3.0;
+            double lWeight =
+                (
+                    lNumCommonD / lLen1
+                    + lNumCommonD / lLen2
+                    + (lNumCommon - lNumTransposed) / lNumCommonD
+                ) / 3.0;
 
             /* The Winkler modification will not be applied unless the
             * percent match was at or above the mWeightThreshold percent
@@ -101,12 +105,14 @@ namespace tools_dotnet.Utility
              */
             const int mNumChars = 4;
 
-            if (lWeight <= mWeightThreshold) return lWeight;
+            if (lWeight <= mWeightThreshold)
+                return lWeight;
             int lMax = Math.Min(mNumChars, Math.Min(aString1.Length, aString2.Length));
             int lPos = 0;
             while (lPos < lMax && aString1[lPos] == aString2[lPos])
                 ++lPos;
-            if (lPos == 0) return lWeight;
+            if (lPos == 0)
+                return lWeight;
             return lWeight + 0.1 * lPos * (1.0 - lWeight);
         }
     }

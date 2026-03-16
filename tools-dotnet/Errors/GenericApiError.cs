@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.Json.Serialization;
@@ -64,7 +64,8 @@ namespace tools_dotnet.Errors
         /// In particular, complex types or collection types may not round-trip to the original type when using the built-in JSON or XML formatters.
         /// </remarks>
         [JsonExtensionData]
-        public IDictionary<string, object> Extensions { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
+        public IDictionary<string, object> Extensions { get; } =
+            new Dictionary<string, object>(StringComparer.Ordinal);
 
         public GenericApiError()
         {
@@ -73,7 +74,8 @@ namespace tools_dotnet.Errors
             Type = "https://httpstatuses.com/" + Status;
         }
 
-        public GenericApiError(string instance) : this()
+        public GenericApiError(string instance)
+            : this()
         {
             Instance = instance;
         }
@@ -91,7 +93,12 @@ namespace tools_dotnet.Errors
             Detail = detail;
         }
 
-        public GenericApiError(string title, string detail, string instance, HttpStatusCode statusCode)
+        public GenericApiError(
+            string title,
+            string detail,
+            string instance,
+            HttpStatusCode statusCode
+        )
             : this(title, detail, statusCode)
         {
             Instance = instance;

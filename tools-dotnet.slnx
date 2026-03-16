@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="tools-dotnet.Tests/tools-dotnet.Tests.csproj" />
+  <Project Path="tools-dotnet/tools-dotnet.csproj" />
+</Solution>
