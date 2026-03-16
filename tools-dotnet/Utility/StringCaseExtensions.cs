@@ -5,28 +5,28 @@ namespace tools_dotnet.Utility
 {
     public static class StringCaseExtensions
     {
-        public static string ToSnakeCase(this string? value) =>
+        public static string? ToSnakeCase(this string? value) =>
             ConvertDelimitedCase(value, '_', upper: false);
 
-        public static string ToKebabCase(this string? value) =>
+        public static string? ToKebabCase(this string? value) =>
             ConvertDelimitedCase(value, '-', upper: false);
 
-        public static string ToDotCase(this string? value) =>
+        public static string? ToDotCase(this string? value) =>
             ConvertDelimitedCase(value, '.', upper: false);
 
-        public static string ToCobolCase(this string? value) =>
+        public static string? ToCobolCase(this string? value) =>
             ConvertDelimitedCase(value, '-', upper: true);
 
-        public static string ToScreamingSnakeCase(this string? value) =>
+        public static string? ToScreamingSnakeCase(this string? value) =>
             ConvertDelimitedCase(value, '_', upper: true);
 
-        public static string ToPascalCase(this string? value) =>
+        public static string? ToPascalCase(this string? value) =>
             ConvertPascalOrCamel(value, pascal: true);
 
-        public static string ToCamelCase(this string? value) =>
+        public static string? ToCamelCase(this string? value) =>
             ConvertPascalOrCamel(value, pascal: false);
 
-        private static string ConvertDelimitedCase(string? value, char separator, bool upper)
+        private static string? ConvertDelimitedCase(string? value, char separator, bool upper)
         {
             if (string.IsNullOrEmpty(value))
                 return value;
@@ -94,7 +94,7 @@ namespace tools_dotnet.Utility
             );
         }
 
-        private static string ConvertPascalOrCamel(string? value, bool pascal)
+        private static string? ConvertPascalOrCamel(string? value, bool pascal)
         {
             if (string.IsNullOrEmpty(value))
                 return value;
