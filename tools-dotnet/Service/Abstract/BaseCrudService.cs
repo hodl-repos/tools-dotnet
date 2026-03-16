@@ -46,26 +46,6 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetAllDtoAsync(cancellationToken: cancellationToken);
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await _baseRepo.GetAllDtoAsync(
-                SoftDeleteQueryMode.IncludeDeleted,
-                cancellationToken
-            );
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await _baseRepo.GetAllDtoAsync(
-                SoftDeleteQueryMode.DeletedOnly,
-                cancellationToken
-            );
-        }
-
         public virtual async Task<IPagedList<TDto>> GetAllAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default
@@ -82,40 +62,12 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetByIdDtoAsync(id, cancellationToken: cancellationToken);
         }
 
-        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
-            TIdType id,
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await _baseRepo.GetByIdDtoAsync(
-                id,
-                SoftDeleteQueryMode.IncludeDeleted,
-                cancellationToken
-            );
-        }
-
         public virtual async Task RemoveAsync(
             TIdType id,
             CancellationToken cancellationToken = default
         )
         {
             await _baseRepo.RemoveAsync(id, cancellationToken);
-        }
-
-        public virtual async Task RestoreAsync(
-            TIdType id,
-            CancellationToken cancellationToken = default
-        )
-        {
-            await _baseRepo.RestoreAsync(id, cancellationToken);
-        }
-
-        public virtual async Task HardRemoveAsync(
-            TIdType id,
-            CancellationToken cancellationToken = default
-        )
-        {
-            await _baseRepo.HardRemoveAsync(id, cancellationToken);
         }
 
         public virtual async Task UpdateAsync(

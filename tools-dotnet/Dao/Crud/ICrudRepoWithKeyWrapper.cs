@@ -18,35 +18,25 @@ namespace tools_dotnet.Dao.Crud
             CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TEntity>> GetAllAsync(
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        );
+        Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
         Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filters,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
-        Task<TEntity> GetByIdAsync(
-            TKeyWrapper keyWrapper,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        );
+        Task<TEntity> GetByIdAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
 
         Task UpdateAsync(
             TKeyWrapper keyWrapper,
@@ -55,12 +45,5 @@ namespace tools_dotnet.Dao.Crud
         );
 
         Task RemoveAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
-
-        Task RestoreAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
-
-        Task HardRemoveAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        );
     }
 }

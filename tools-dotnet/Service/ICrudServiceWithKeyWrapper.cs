@@ -20,16 +20,6 @@ namespace tools_dotnet.Service
             CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        );
-
-        Task<IEnumerable<TDto>> GetAllDeletedAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        );
-
         Task<IPagedList<TDto>> GetAllAsync(
             IApiPagination apiPagination,
             TKeyWrapper keyWrapper,
@@ -41,11 +31,6 @@ namespace tools_dotnet.Service
             CancellationToken cancellationToken = default
         );
 
-        Task<TDto> GetByIdIncludingDeletedAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        );
-
         Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TDto item,
@@ -53,12 +38,5 @@ namespace tools_dotnet.Service
         );
 
         Task RemoveAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
-
-        Task RestoreAsync(TKeyWrapper keyWrapper, CancellationToken cancellationToken = default);
-
-        Task HardRemoveAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        );
     }
 }

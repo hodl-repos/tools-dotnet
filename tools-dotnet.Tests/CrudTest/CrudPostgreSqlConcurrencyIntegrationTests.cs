@@ -1,3 +1,4 @@
+using System.Linq;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -51,6 +52,7 @@ namespace tools_dotnet.Tests.CrudTest
                 {
                     config.CreateMap<XminEntity, XminEntityDto>().ReverseMap();
                     config.CreateMap<XminEntityInputDto, XminEntity>();
+                    config.CreateMap<SoftDeleteXminEntity, SoftDeleteXminEntityDto>().ReverseMap();
                     config.CreateMap<GuidTokenEntity, GuidTokenEntityDto>().ReverseMap();
                     config.CreateMap<GuidTokenUpdateDto, GuidTokenEntity>();
                 },
@@ -66,7 +68,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task UpdateAsync_ShouldThrow_WhenXminIsStale()
+        public async Task UpdateAsync_WithExplicitToken_ShouldThrow_WhenXminIsStale()
         {
             var seeded = await AddXminEntityAsync();
             await UpdateXminEntityDirectlyAsync(seeded.Id, "server");
@@ -81,7 +83,8 @@ namespace tools_dotnet.Tests.CrudTest
                         Id = seeded.Id,
                         Name = "client",
                         Xmin = seeded.Xmin
-                    }
+                    },
+                    seeded.Xmin
                 )
             );
         }
@@ -113,6 +116,82 @@ namespace tools_dotnet.Tests.CrudTest
             var token = await repo.GetConcurrencyTokenAsync(seeded.Id);
 
             token.ShouldBe(seeded.Xmin);
+        }
+
+        [Test]
+        public async Task GetAllDtoAsync_ShouldExposeDeletedRows_ForSoftDeleteXminRepo()
+        {
+            var seeded = await AddSoftDeleteXminEntityAsync();
+
+            await using (var deleteContext = new CrudPostgreSqlTestDbContext(_dbContextOptions))
+            {
+                var repo = new SoftDeleteXminEntityRepo(
+                    deleteContext,
+                    _mapper,
+                    _paginationProcessor
+                );
+                var token = await repo.GetConcurrencyTokenAsync(seeded.Id);
+                await repo.RemoveAsync(seeded.Id, token);
+            }
+
+            await using var dbContext = new CrudPostgreSqlTestDbContext(_dbContextOptions);
+            var repoAfterDelete = new SoftDeleteXminEntityRepo(
+                dbContext,
+                _mapper,
+                _paginationProcessor
+            );
+
+            await Should.ThrowAsync<ItemNotFoundException>(() => repoAfterDelete.GetByIdAsync(seeded.Id));
+
+            var deletedDtos = (
+                await repoAfterDelete.GetAllDtoAsync(SoftDeleteQueryMode.DeletedOnly)
+            ).ToList();
+            deletedDtos.Count.ShouldBe(1);
+            deletedDtos[0].Id.ShouldBe(seeded.Id);
+            deletedDtos[0].DeletedTimestamp.ShouldNotBeNull();
+
+            var deleted = await repoAfterDelete.GetByIdAsync(
+                seeded.Id,
+                SoftDeleteQueryMode.IncludeDeleted
+            );
+            deleted.DeletedTimestamp.ShouldNotBeNull();
+        }
+
+        [Test]
+        public async Task RestoreAsync_WithExplicitToken_ShouldRestoreSoftDeletedXminEntity()
+        {
+            var seeded = await AddSoftDeleteXminEntityAsync();
+
+            await using (var deleteContext = new CrudPostgreSqlTestDbContext(_dbContextOptions))
+            {
+                var repo = new SoftDeleteXminEntityRepo(
+                    deleteContext,
+                    _mapper,
+                    _paginationProcessor
+                );
+                var token = await repo.GetConcurrencyTokenAsync(seeded.Id);
+                await repo.RemoveAsync(seeded.Id, token);
+            }
+
+            await using (var restoreContext = new CrudPostgreSqlTestDbContext(_dbContextOptions))
+            {
+                var repo = new SoftDeleteXminEntityRepo(
+                    restoreContext,
+                    _mapper,
+                    _paginationProcessor
+                );
+                var deletedToken = await repo.GetConcurrencyTokenAsync(seeded.Id);
+                await repo.RestoreAsync(seeded.Id, deletedToken);
+            }
+
+            await using var verifyContext = new CrudPostgreSqlTestDbContext(_dbContextOptions);
+            var repoAfterRestore = new SoftDeleteXminEntityRepo(
+                verifyContext,
+                _mapper,
+                _paginationProcessor
+            );
+            var restored = await repoAfterRestore.GetByIdAsync(seeded.Id);
+            restored.DeletedTimestamp.ShouldBeNull();
         }
 
         [Test]
@@ -189,6 +268,15 @@ namespace tools_dotnet.Tests.CrudTest
             return await dbContext.GuidTokenEntities.AsNoTracking().SingleAsync(x => x.Id == 1);
         }
 
+        private async Task<SoftDeleteXminEntity> AddSoftDeleteXminEntityAsync()
+        {
+            await using var dbContext = new CrudPostgreSqlTestDbContext(_dbContextOptions);
+            dbContext.SoftDeleteXminEntities.Add(new SoftDeleteXminEntity { Id = 1, Name = "initial" });
+            await dbContext.SaveChangesAsync();
+
+            return await dbContext.SoftDeleteXminEntities.AsNoTracking().SingleAsync(x => x.Id == 1);
+        }
+
         private async Task<GuidTokenEntity> UpdateGuidTokenEntityDirectlyAsync(int id, string name)
         {
             await using var dbContext = new CrudPostgreSqlTestDbContext(_dbContextOptions);
@@ -259,6 +347,8 @@ namespace tools_dotnet.Tests.CrudTest
 
             public DbSet<XminEntity> XminEntities => Set<XminEntity>();
 
+            public DbSet<SoftDeleteXminEntity> SoftDeleteXminEntities => Set<SoftDeleteXminEntity>();
+
             public DbSet<GuidTokenEntity> GuidTokenEntities => Set<GuidTokenEntity>();
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -266,6 +356,14 @@ namespace tools_dotnet.Tests.CrudTest
                 modelBuilder.Entity<XminEntity>(entity =>
                 {
                     entity.ToTable("crud_postgresql_xmin_entities");
+                    entity.HasKey(x => x.Id);
+                    entity.Property(x => x.Id).ValueGeneratedNever();
+                    entity.Property(x => x.Xmin).HasColumnName("xmin").IsRowVersion();
+                });
+
+                modelBuilder.Entity<SoftDeleteXminEntity>(entity =>
+                {
+                    entity.ToTable("crud_postgresql_soft_delete_xmin_entities");
                     entity.HasKey(x => x.Id);
                     entity.Property(x => x.Id).ValueGeneratedNever();
                     entity.Property(x => x.Xmin).HasColumnName("xmin").IsRowVersion();
@@ -301,6 +399,21 @@ namespace tools_dotnet.Tests.CrudTest
             public Guid Etag { get; set; }
         }
 
+        private sealed class SoftDeleteXminEntity : IEntityWithId<int>, IAuditableEntity
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; } = string.Empty;
+
+            public uint Xmin { get; set; }
+
+            public DateTimeOffset CreatedTimestamp { get; set; }
+
+            public DateTimeOffset? UpdatedTimestamp { get; set; }
+
+            public DateTimeOffset? DeletedTimestamp { get; set; }
+        }
+
         private sealed class XminEntityDto : IDtoWithId<int>
         {
             public int Id { get; set; }
@@ -326,6 +439,17 @@ namespace tools_dotnet.Tests.CrudTest
             public string Name { get; set; } = string.Empty;
 
             public Guid Etag { get; set; }
+        }
+
+        private sealed class SoftDeleteXminEntityDto : IDtoWithId<int>
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; } = string.Empty;
+
+            public uint Xmin { get; set; }
+
+            public DateTimeOffset? DeletedTimestamp { get; set; }
         }
 
         private sealed class GuidTokenUpdateDto : IDtoWithId<int>
@@ -370,6 +494,29 @@ namespace tools_dotnet.Tests.CrudTest
                     mapper,
                     paginationProcessor,
                     CrudConcurrencyConfiguration.ForProperty<Guid>(nameof(GuidTokenEntity.Etag))
+                ) { }
+        }
+
+        private sealed class SoftDeleteXminEntityRepo
+            : BaseConcurrentSoftDeleteCrudDtoRepo<
+                SoftDeleteXminEntity,
+                int,
+                SoftDeleteXminEntityDto,
+                uint
+            >
+        {
+            public SoftDeleteXminEntityRepo(
+                DbContext dbContext,
+                IMapper mapper,
+                IPaginationProcessor paginationProcessor
+            )
+                : base(
+                    dbContext,
+                    mapper,
+                    paginationProcessor,
+                    CrudConcurrencyConfiguration.PostgreSqlXmin(
+                        nameof(SoftDeleteXminEntity.Xmin)
+                    )
                 ) { }
         }
     }

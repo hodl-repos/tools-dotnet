@@ -78,30 +78,6 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
-        public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await _baseRepo.GetAllDtoAsync(
-                keyWrapper.GetContainingResourceFilter(),
-                SoftDeleteQueryMode.IncludeDeleted,
-                cancellationToken
-            );
-        }
-
-        public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await _baseRepo.GetAllDtoAsync(
-                keyWrapper.GetContainingResourceFilter(),
-                SoftDeleteQueryMode.DeletedOnly,
-                cancellationToken
-            );
-        }
-
         public virtual async Task<IPagedList<TDto>> GetAllAsync(
             IApiPagination apiPagination,
             TKeyWrapper keyWrapper,
@@ -121,18 +97,6 @@ namespace tools_dotnet.Service.Abstract
         )
         {
             return await _baseRepo.GetByIdDtoAsync(keyWrapper, cancellationToken: cancellationToken);
-        }
-
-        public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        )
-        {
-            return await _baseRepo.GetByIdDtoAsync(
-                keyWrapper,
-                SoftDeleteQueryMode.IncludeDeleted,
-                cancellationToken
-            );
         }
 
         public virtual async Task UpdateAsync(
@@ -155,20 +119,5 @@ namespace tools_dotnet.Service.Abstract
             await _baseRepo.RemoveAsync(keyWrapper, cancellationToken);
         }
 
-        public virtual async Task RestoreAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        )
-        {
-            await _baseRepo.RestoreAsync(keyWrapper, cancellationToken);
-        }
-
-        public virtual async Task HardRemoveAsync(
-            TKeyWrapper keyWrapper,
-            CancellationToken cancellationToken = default
-        )
-        {
-            await _baseRepo.HardRemoveAsync(keyWrapper, cancellationToken);
-        }
     }
 }

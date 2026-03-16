@@ -47,7 +47,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task UpdateAsync_ShouldAdvanceUpdatedTimestamp_WhenEntityTimestampMatches()
+        public async Task UpdateAsync_WithExplicitToken_ShouldAdvanceUpdatedTimestamp_WhenEntityTimestampMatches()
         {
             var seeded = await AddTrackedEntityAsync();
             await Task.Delay(10);
@@ -62,7 +62,8 @@ namespace tools_dotnet.Tests.CrudTest
                     Name = "updated",
                     CreatedTimestamp = seeded.CreatedTimestamp,
                     UpdatedTimestamp = seeded.UpdatedTimestamp
-                }
+                },
+                seeded.UpdatedTimestamp
             );
 
             var updated = await LoadTrackedEntityAsync(seeded.Id);
@@ -178,7 +179,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task UpdateAsync_ShouldThrow_WhenEntityTimestampIsStale()
+        public async Task UpdateAsync_WithExplicitToken_ShouldThrow_WhenEntityTimestampIsStale()
         {
             var seeded = await AddTrackedEntityAsync();
             var externallyUpdated = await UpdateTrackedEntityDirectlyAsync(seeded.Id, "server");
@@ -194,7 +195,8 @@ namespace tools_dotnet.Tests.CrudTest
                         Name = "client",
                         CreatedTimestamp = seeded.CreatedTimestamp,
                         UpdatedTimestamp = seeded.UpdatedTimestamp
-                    }
+                    },
+                    seeded.UpdatedTimestamp
                 )
             );
 
@@ -203,7 +205,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task UpdateAsync_ShouldEnforceConcurrency_ForChangeTrackingDtoInput()
+        public async Task UpdateAsync_WithExplicitToken_ShouldEnforceConcurrency_ForChangeTrackingDtoInput()
         {
             var seeded = await AddTrackedEntityAsync();
             await UpdateTrackedEntityDirectlyAsync(seeded.Id, "server");
@@ -219,7 +221,8 @@ namespace tools_dotnet.Tests.CrudTest
                         Name = "client",
                         CreatedTimestamp = seeded.CreatedTimestamp,
                         UpdatedTimestamp = seeded.UpdatedTimestamp
-                    }
+                    },
+                    seeded.UpdatedTimestamp
                 )
             );
         }
@@ -252,7 +255,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task UpdateAsync_ShouldAdvanceUpdatedTimestamp_WhenKeyWrapperEntityTimestampMatches()
+        public async Task UpdateAsync_WithExplicitToken_ShouldAdvanceUpdatedTimestamp_WhenKeyWrapperEntityTimestampMatches()
         {
             var seeded = await AddKeyWrappedEntityAsync();
             var keyWrapper = new ScopedKeyWrapper(seeded.ParentId, seeded.Id);
@@ -270,7 +273,8 @@ namespace tools_dotnet.Tests.CrudTest
                     Name = "updated",
                     CreatedTimestamp = seeded.CreatedTimestamp,
                     UpdatedTimestamp = seeded.UpdatedTimestamp
-                }
+                },
+                seeded.UpdatedTimestamp
             );
 
             var updated = await LoadKeyWrappedEntityAsync(seeded.ParentId, seeded.Id);
@@ -279,7 +283,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task UpdateAsync_ShouldThrow_WhenKeyWrapperDtoTimestampIsStale()
+        public async Task UpdateAsync_WithExplicitToken_ShouldThrow_WhenKeyWrapperDtoTimestampIsStale()
         {
             var seeded = await AddKeyWrappedEntityAsync();
             await UpdateKeyWrappedEntityDirectlyAsync(seeded.ParentId, seeded.Id, "server");
@@ -298,7 +302,8 @@ namespace tools_dotnet.Tests.CrudTest
                         Name = "client",
                         CreatedTimestamp = seeded.CreatedTimestamp,
                         UpdatedTimestamp = seeded.UpdatedTimestamp
-                    }
+                    },
+                    seeded.UpdatedTimestamp
                 )
             );
         }
@@ -349,21 +354,6 @@ namespace tools_dotnet.Tests.CrudTest
 
             var deleted = await LoadTrackedEntityAsync(seeded.Id);
             deleted.DeletedTimestamp.ShouldNotBeNull();
-        }
-
-        [Test]
-        public async Task ConcurrentRepo_RemoveAsync_WithoutToken_ShouldThrow()
-        {
-            var seeded = await AddTrackedEntityAsync();
-
-            await using var dbContext = CreateDbContext();
-            var repo = new TrackedEntityRepo(dbContext, _mapper, _paginationProcessor);
-
-            var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-                repo.RemoveAsync(seeded.Id)
-            );
-
-            exception.Message.ShouldContain("concurrency-aware repos");
         }
 
         [Test]

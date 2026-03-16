@@ -2,6 +2,10 @@
 
 `tools-dotnet` is a shared .NET library for common backend patterns in `hodl-software` projects.
 
+> Version notice:
+> `tools_dotnet` `v1.x.y` is for `.NET 9`.
+> `tools_dotnet` `v2.x.y` is for `.NET 10`.
+
 It gives you:
 
 - Generic CRUD repository and service base classes.
@@ -287,25 +291,52 @@ public ActionResult<IReadOnlyList<UserEntity>> GetUsers([FromQuery] ApiPaginatio
 The DAO layer gives you reusable generic repository patterns:
 
 - `ICrudRepo<TEntity, TIdType>` and `BaseCrudRepo<TEntity, TIdType>`
+- `ISoftDeleteCrudRepo<TEntity, TIdType>` and `BaseSoftDeleteCrudRepo<TEntity, TIdType>`
+- `IConcurrentCrudRepo<TEntity, TIdType, TConcurrencyToken>` and `BaseConcurrentCrudRepo<...>`
+- `IConcurrentSoftDeleteCrudRepo<TEntity, TIdType, TConcurrencyToken>` and `BaseConcurrentSoftDeleteCrudRepo<...>`
 - `ICrudDtoRepo<TEntity, TIdType, TDto>` and `BaseCrudDtoRepo<TEntity, TIdType, TDto>`
+- `ISoftDeleteCrudDtoRepo<TEntity, TIdType, TDto>` and `BaseSoftDeleteCrudDtoRepo<...>`
+- `IConcurrentCrudDtoRepo<TEntity, TIdType, TDto, TConcurrencyToken>` and `BaseConcurrentCrudDtoRepo<...>`
+- `IConcurrentSoftDeleteCrudDtoRepo<TEntity, TIdType, TDto, TConcurrencyToken>` and `BaseConcurrentSoftDeleteCrudDtoRepo<...>`
 - `ICrudRepoWithKeyWrapper<TEntity, TKeyWrapper>`
 - `ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>`
+- `ISoftDeleteCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>`
+- `ISoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>`
+- `IConcurrentCrudRepoWithKeyWrapper<TEntity, TKeyWrapper, TConcurrencyToken>` and `BaseConcurrentCrudRepoWithKeyWrapper<...>`
+- `IConcurrentCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TConcurrencyToken>` and `BaseConcurrentCrudDtoRepoWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudRepoWithKeyWrapper<TEntity, TKeyWrapper, TConcurrencyToken>` and `BaseConcurrentSoftDeleteCrudRepoWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TConcurrencyToken>` and `BaseConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<...>`
 - `ISortFilterAndPageRepo<TEntity>` / `ISortFilterAndPageDtoRepo<TEntity, TDto>`
 
 Current base implementations include:
 
-- Automatic soft-delete filtering for `IAuditableEntity`.
+- Active-only reads by default, with soft-delete-specific contracts for deleted-row access.
 - Paging/filter/sort integration through `IPaginationProcessor`.
 - Provider-neutral exception mapping for common FK/dependency and unique-key violations.
 
 ### Soft-delete lifecycle
 
-For `IAuditableEntity` types, the default read APIs now stay on the active view:
+Generic CRUD contracts stay on the active view:
 
 - `GetAllAsync(...)` and `GetByIdAsync(...)` exclude soft-deleted rows.
-- `RemoveAsync(...)` performs a soft delete.
+- `RemoveAsync(...)` performs a soft delete for `IAuditableEntity` types and a physical delete otherwise.
 
-Use `SoftDeleteQueryMode` on repo read APIs when you need administrative access to deleted rows:
+When an entity supports soft delete, opt into the soft-delete-specific contracts and base classes:
+
+- `ISoftDeleteCrudRepo<...>` / `BaseSoftDeleteCrudRepo<...>`
+- `ISoftDeleteCrudDtoRepo<...>` / `BaseSoftDeleteCrudDtoRepo<...>`
+- `ISoftDeleteCrudRepoWithKeyWrapper<...>` / `BaseSoftDeleteCrudRepoWithKeyWrapper<...>`
+- `ISoftDeleteCrudDtoRepoWithKeyWrapper<...>` / `BaseSoftDeleteCrudDtoRepoWithKeyWrapper<...>`
+- `ISoftDeleteCrudService<...>` / `BaseSoftDeleteCrudService<...>`
+- `ISoftDeleteCrudServiceWithKeyWrapper<...>` / `BaseSoftDeleteCrudServiceWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudRepo<...>` / `BaseConcurrentSoftDeleteCrudRepo<...>`
+- `IConcurrentSoftDeleteCrudDtoRepo<...>` / `BaseConcurrentSoftDeleteCrudDtoRepo<...>`
+- `IConcurrentSoftDeleteCrudRepoWithKeyWrapper<...>` / `BaseConcurrentSoftDeleteCrudRepoWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<...>` / `BaseConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudService<...>` / `BaseConcurrentSoftDeleteCrudService<...>`
+- `IConcurrentSoftDeleteCrudServiceWithKeyWrapper<...>` / `BaseConcurrentSoftDeleteCrudServiceWithKeyWrapper<...>`
+
+Those contracts expose deleted-row access via `SoftDeleteQueryMode`:
 
 - `GetAllAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`
 - `GetAllAsync(SoftDeleteQueryMode.DeletedOnly, ...)`
@@ -314,22 +345,41 @@ Use `SoftDeleteQueryMode` on repo read APIs when you need administrative access 
 - `GetAllDtoAsync(SoftDeleteQueryMode.DeletedOnly, ...)`
 - `GetByIdDtoAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`
 
-The restore and hard-delete lifecycle stays explicit:
+On the soft-delete-specific contracts, the restore and hard-delete lifecycle stays explicit:
 
 - `RestoreAsync(...)`
 - `HardRemoveAsync(...)`
 
-The service layer still exposes convenience methods like `GetAllIncludingDeletedAsync(...)` and
-`GetAllDeletedAsync(...)`, but those now delegate to the repo-level `SoftDeleteQueryMode` APIs.
+The service layer convenience methods like `GetAllIncludingDeletedAsync(...)` and
+`GetAllDeletedAsync(...)` now live on the soft-delete-specific service contracts instead of the
+generic `ICrudService`.
 
-Concurrency-aware repos and services also expose token-aware `RestoreAsync(...)` and `HardRemoveAsync(...)` overloads.
+Example:
+
+```csharp
+public sealed class UserRepo : BaseSoftDeleteCrudDtoRepo<UserEntity, int, UserDto>
+{
+    public UserRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
+        : base(dbContext, mapper, paginationProcessor) { }
+}
+```
+
+Concurrency-aware soft-delete repos and services also expose token-aware
+`RestoreAsync(...)` and `HardRemoveAsync(...)` overloads via the
+`IConcurrentSoftDelete*` contracts.
 
 ### Service layer
 
 The service layer wraps repository access and validation:
 
 - `ICrudService<TDto, TIdType>` and `BaseCrudService<...>`
+- `ISoftDeleteCrudService<TDto, TIdType>` and `BaseSoftDeleteCrudService<...>`
+- `IConcurrentCrudService<TDto, TIdType, TConcurrencyToken>` and `BaseConcurrentCrudService<...>`
+- `IConcurrentSoftDeleteCrudService<TDto, TIdType, TConcurrencyToken>` and `BaseConcurrentSoftDeleteCrudService<...>`
 - `ICrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto>` and `BaseCrudServiceWithKeyWrapper<...>`
+- `ISoftDeleteCrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto>` and `BaseSoftDeleteCrudServiceWithKeyWrapper<...>`
+- `IConcurrentCrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto, TConcurrencyToken>` and `BaseConcurrentCrudServiceWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudServiceWithKeyWrapper<TEntity, TKeyWrapper, TDto, TConcurrencyToken>` and `BaseConcurrentSoftDeleteCrudServiceWithKeyWrapper<...>`
 
 Base services call FluentValidation before `Add`/`Update`.
 
@@ -352,12 +402,23 @@ The concurrency-aware CRUD variants add optimistic concurrency using a configura
 - `IConcurrentCrudDtoRepo<...>` / `BaseConcurrentCrudDtoRepo<...>`
 - `IConcurrentCrudRepoWithKeyWrapper<...>` / `BaseConcurrentCrudRepoWithKeyWrapper<...>`
 - `IConcurrentCrudDtoRepoWithKeyWrapper<...>` / `BaseConcurrentCrudDtoRepoWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudRepo<...>` / `BaseConcurrentSoftDeleteCrudRepo<...>`
+- `IConcurrentSoftDeleteCrudDtoRepo<...>` / `BaseConcurrentSoftDeleteCrudDtoRepo<...>`
+- `IConcurrentSoftDeleteCrudRepoWithKeyWrapper<...>` / `BaseConcurrentSoftDeleteCrudRepoWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<...>` / `BaseConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<...>`
 - `IConcurrentCrudService<...>` / `BaseConcurrentCrudService<...>`
 - `IConcurrentCrudServiceWithKeyWrapper<...>` / `BaseConcurrentCrudServiceWithKeyWrapper<...>`
+- `IConcurrentSoftDeleteCrudService<...>` / `BaseConcurrentSoftDeleteCrudService<...>`
+- `IConcurrentSoftDeleteCrudServiceWithKeyWrapper<...>` / `BaseConcurrentSoftDeleteCrudServiceWithKeyWrapper<...>`
 
 The legacy `BaseCrud...` and `BaseCrudService...` types stay non-concurrent and preserve the old behavior.
 
-By default, the concurrent variants use `UpdatedTimestamp`, and `UpdateAsync(item)` is enforced when the request payload exposes the configured token property.
+A common configuration is `UpdatedTimestamp`-based concurrency via
+`CrudConcurrencyConfiguration.UpdatedTimestamp(...)`, and all concurrent mutation methods
+require an explicit concurrency token:
+
+- `UpdateAsync(item, concurrencyToken)`
+- `RemoveAsync(id, concurrencyToken)`
 
 Example DTO:
 
@@ -373,7 +434,7 @@ public sealed class UserDto : IDtoWithId<int>, IChangeTrackingDto
 }
 ```
 
-Update requests should round-trip the `UpdatedTimestamp` from the last read.
+Update requests should round-trip the `UpdatedTimestamp` from the last read and pass it back explicitly.
 If the stored value no longer matches, the repo throws `ConcurrentModificationException`.
 
 You can also fetch the current token before an update or delete:
@@ -417,7 +478,9 @@ await userRepo.UpdateAsync(updateDtoWithoutToken, token);
 await userRepo.RemoveAsync(userId, token);
 ```
 
-The legacy non-concurrent repos and services still expose the old `RemoveAsync(...)` overloads. The concurrent variants require the token-aware overloads for deletes.
+The legacy non-concurrent repos and services still expose the untokened
+`UpdateAsync(...)` and `RemoveAsync(...)` overloads. The concurrent variants require the
+token-aware overloads for both updates and deletes.
 
 ## Error and exception helpers
 
@@ -533,12 +596,8 @@ Recent changes replaced a few older APIs. If you are upgrading, use these mappin
 
 - `SnakeCaseEnumConverter<T>` was removed. Replace it with `new EnumCaseConverter(StringCaseType.SnakeCase)`.
 - `UpperKebabCaseEnumConverter<TEnum>` was removed. Replace it with `new EnumCaseConverter(StringCaseType.UpperKebabCase)` or `StringCaseType.CobolCase`.
-- Repo `GetAllIncludingDeletedAsync(...)` was removed. Replace it with `GetAllAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`.
-- Repo `GetAllDeletedAsync(...)` was removed. Replace it with `GetAllAsync(SoftDeleteQueryMode.DeletedOnly, ...)`.
-- Repo `GetByIdIncludingDeletedAsync(...)` was removed. Replace it with `GetByIdAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`.
-- DTO repo `GetAllDtoIncludingDeletedAsync(...)` was removed. Replace it with `GetAllDtoAsync(SoftDeleteQueryMode.IncludeDeleted, ...)`.
-- DTO repo `GetAllDeletedDtoAsync(...)` was removed. Replace it with `GetAllDtoAsync(SoftDeleteQueryMode.DeletedOnly, ...)`.
-- DTO repo `GetByIdDtoIncludingDeletedAsync(...)` was removed. Replace it with `GetByIdDtoAsync(id, SoftDeleteQueryMode.IncludeDeleted, ...)`.
+- Generic repos/services no longer expose deleted-row reads, `RestoreAsync(...)`, or `HardRemoveAsync(...)`. Use the matching `ISoftDelete*` / `BaseSoftDelete*` contract first, then call the `SoftDeleteQueryMode`, `RestoreAsync(...)`, or `HardRemoveAsync(...)` members there.
+- Concurrent repos/services no longer expose untokened `UpdateAsync(...)` or `RemoveAsync(...)`. Fetch or round-trip the concurrency token first, then call the token-aware overloads.
 - `FindAsync(..., ignoreDeletedWithAuditable: false, ...)` was removed. Replace it with `FindAsync(..., SoftDeleteQueryMode.IncludeDeleted, ...)`.
 - `FindDtoAsync(..., ignoreDeletedWithAuditable: false, ...)` was removed. Replace it with `FindDtoAsync(..., SoftDeleteQueryMode.IncludeDeleted, ...)`.
 
@@ -569,8 +628,8 @@ var user = await userRepo.GetByIdAsync(
 
 Note:
 Service-level convenience methods such as `GetAllIncludingDeletedAsync(...)`,
-`GetAllDeletedAsync(...)`, and `GetByIdIncludingDeletedAsync(...)` still exist.
-The soft-delete consolidation only changed the repo-level APIs.
+`GetAllDeletedAsync(...)`, and `GetByIdIncludingDeletedAsync(...)` still exist on the
+soft-delete service contracts. The generic CRUD contracts are now intentionally active-only.
 
 ## Custom filter expression providers
 

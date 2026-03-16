@@ -54,11 +54,13 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.ActiveOnly
+                )
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
                 .ToListAsync(cancellationToken);
@@ -66,11 +68,10 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            return await SetupQueryModifications(_dbContext.Set<TEntity>(), SoftDeleteQueryMode.ActiveOnly)
                 .Where(filter)
                 .AsNoTracking()
                 .ProjectTo<TDto>(_mapper.ConfigurationProvider)
@@ -82,14 +83,14 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            return await GetAllDtoAsync(
+            return await GetAllDtoInternalAsync(
                 apiPagination,
                 SoftDeleteQueryMode.ActiveOnly,
                 cancellationToken
             );
         }
 
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
+        protected virtual async Task<IPagedList<TDto>> GetAllDtoInternalAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -112,22 +113,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            return await GetAllDtoAsync(
-                apiPagination,
-                filter,
-                SoftDeleteQueryMode.ActiveOnly,
-                cancellationToken
-            );
-        }
-
-        public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
-            IApiPagination apiPagination,
-            Expression<Func<TEntity, bool>> filter,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), SoftDeleteQueryMode.ActiveOnly)
                 .Where(filter)
                 .AsNoTracking();
 
@@ -141,13 +127,12 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<TDto> GetByIdDtoAsync(
             TKeyWrapper keyWrapper,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
             var dto = await SetupQueryModifications(
                     _dbContext.Set<TEntity>(),
-                    softDeleteQueryMode
+                    SoftDeleteQueryMode.ActiveOnly
                 )
                 .AsNoTracking()
                 .Where(keyWrapper.GetKeyFilter())
@@ -165,29 +150,13 @@ namespace tools_dotnet.Dao.Crud.Impl
         public virtual async Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TInputDto item,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var concurrencyToken =
-                CrudConcurrencyHelper.GetRequiredRequestConcurrencyToken<TConcurrencyToken>(
-                    _concurrencyConfiguration,
-                    item
-                );
-
-            await UpdateAsync(keyWrapper, item, concurrencyToken, cancellationToken);
-        }
-
-        public virtual async Task UpdateAsync(
-            TKeyWrapper keyWrapper,
-            TInputDto item,
             TConcurrencyToken concurrencyToken,
             CancellationToken cancellationToken = default
         )
         {
             var dbEntity = await GetByIdInternalAsync(
                 keyWrapper,
-                SoftDeleteQueryMode.ActiveOnly,
-                cancellationToken
+                cancellationToken: cancellationToken
             );
             CrudConcurrencyHelper.EnsureMatchingConcurrencyTokenValue(
                 _concurrencyConfiguration,

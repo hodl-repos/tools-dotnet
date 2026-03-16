@@ -61,7 +61,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task ConcurrentService_RemoveAsync_WithoutToken_ShouldThrow()
+        public async Task ConcurrentService_RemoveAsync_WithExplicitToken_ShouldSoftDeleteEntity()
         {
             var seeded = await AddTrackedEntityAsync();
 
@@ -71,12 +71,12 @@ namespace tools_dotnet.Tests.CrudTest
                 new ServiceTrackedEntityConcurrentRepo(dbContext, _mapper, _paginationProcessor),
                 new ServiceTrackedEntityValidator()
             );
+            var token = await service.GetConcurrencyTokenAsync(seeded.Id);
 
-            var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-                service.RemoveAsync(seeded.Id)
-            );
+            await service.RemoveAsync(seeded.Id, token);
 
-            exception.Message.ShouldContain("concurrency-aware services");
+            var deleted = await LoadTrackedEntityAsync(seeded.Id);
+            deleted.DeletedTimestamp.ShouldNotBeNull();
         }
 
         [Test]

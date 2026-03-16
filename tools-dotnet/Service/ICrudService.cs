@@ -14,14 +14,6 @@ namespace tools_dotnet.Service
 
         Task<IEnumerable<TDto>> GetAllAsync(CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
-            CancellationToken cancellationToken = default
-        );
-
-        Task<IEnumerable<TDto>> GetAllDeletedAsync(
-            CancellationToken cancellationToken = default
-        );
-
         Task<IPagedList<TDto>> GetAllAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default
@@ -29,17 +21,8 @@ namespace tools_dotnet.Service
 
         Task<TDto> GetByIdAsync(TIdType id, CancellationToken cancellationToken = default);
 
-        Task<TDto> GetByIdIncludingDeletedAsync(
-            TIdType id,
-            CancellationToken cancellationToken = default
-        );
-
         Task UpdateAsync(TDto item, CancellationToken cancellationToken = default);
 
         Task RemoveAsync(TIdType id, CancellationToken cancellationToken = default);
-
-        Task RestoreAsync(TIdType id, CancellationToken cancellationToken = default);
-
-        Task HardRemoveAsync(TIdType id, CancellationToken cancellationToken = default);
     }
 }

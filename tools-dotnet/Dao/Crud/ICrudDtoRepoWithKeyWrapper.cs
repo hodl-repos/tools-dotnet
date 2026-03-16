@@ -23,27 +23,21 @@ namespace tools_dotnet.Dao.Crud
             CancellationToken cancellationToken = default
         );
 
-        Task<IEnumerable<TDto>> GetAllDtoAsync(
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        );
+        Task<IEnumerable<TDto>> GetAllDtoAsync(CancellationToken cancellationToken = default);
 
         Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
@@ -55,7 +49,6 @@ namespace tools_dotnet.Dao.Crud
 
         Task<TDto> GetByIdDtoAsync(
             TKeyWrapper keyWrapper,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
     }

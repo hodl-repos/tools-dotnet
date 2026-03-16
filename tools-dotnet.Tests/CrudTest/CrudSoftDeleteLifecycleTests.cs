@@ -135,21 +135,6 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task ConcurrentRestoreAsync_ShouldRequireExplicitToken()
-        {
-            var seeded = await AddSoftDeleteEntityAsync(1, "concurrent");
-
-            await using var dbContext = CreateDbContext();
-            var repo = new ConcurrentSoftDeleteRepo(dbContext, _mapper, _paginationProcessor);
-
-            var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-                repo.RestoreAsync(seeded.Id)
-            );
-
-            exception.Message.ShouldContain("concurrency-aware repos");
-        }
-
-        [Test]
         public async Task ConcurrentRestoreAsync_WithToken_ShouldRestoreDeletedEntity()
         {
             var seeded = await AddSoftDeleteEntityAsync(1, "restore-concurrent");
@@ -232,7 +217,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         [Test]
-        public async Task ConcurrentService_HardRemoveAsync_WithoutToken_ShouldThrow()
+        public async Task ConcurrentService_HardRemoveAsync_WithToken_ShouldPhysicallyDeleteEntity()
         {
             var seeded = await AddSoftDeleteEntityAsync(1, "service");
 
@@ -242,12 +227,12 @@ namespace tools_dotnet.Tests.CrudTest
                 new ConcurrentSoftDeleteRepo(dbContext, _mapper, _paginationProcessor),
                 new SoftDeleteEntityValidator()
             );
+            var concurrencyToken = await service.GetConcurrencyTokenAsync(seeded.Id);
 
-            var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-                service.HardRemoveAsync(seeded.Id)
-            );
+            await service.HardRemoveAsync(seeded.Id, concurrencyToken);
 
-            exception.Message.ShouldContain("concurrency-aware services");
+            var exists = await dbContext.SoftDeleteEntities.AnyAsync(x => x.Id == seeded.Id);
+            exists.ShouldBeFalse();
         }
 
         [Test]
@@ -446,7 +431,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         private sealed class LegacySoftDeleteRepo
-            : BaseCrudDtoRepo<SoftDeleteEntity, int, SoftDeleteEntityDto>
+            : BaseSoftDeleteCrudDtoRepo<SoftDeleteEntity, int, SoftDeleteEntityDto>
         {
             public LegacySoftDeleteRepo(
                 DbContext dbContext,
@@ -457,7 +442,12 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         private sealed class ConcurrentSoftDeleteRepo
-            : BaseConcurrentCrudDtoRepo<SoftDeleteEntity, int, SoftDeleteEntityDto, DateTimeOffset?>
+            : BaseConcurrentSoftDeleteCrudDtoRepo<
+                SoftDeleteEntity,
+                int,
+                SoftDeleteEntityDto,
+                DateTimeOffset?
+            >
         {
             public ConcurrentSoftDeleteRepo(
                 DbContext dbContext,
@@ -476,7 +466,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         private sealed class LegacyScopedSoftDeleteRepo
-            : BaseCrudDtoRepoWithKeyWrapper<
+            : BaseSoftDeleteCrudDtoRepoWithKeyWrapper<
                 ScopedSoftDeleteEntity,
                 ScopedSoftDeleteKeyWrapper,
                 ScopedSoftDeleteEntityDto
@@ -491,7 +481,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         private sealed class LegacySoftDeleteService
-            : BaseCrudService<
+            : BaseSoftDeleteCrudService<
                 SoftDeleteEntity,
                 int,
                 SoftDeleteEntityDto,
@@ -508,7 +498,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         private sealed class ConcurrentSoftDeleteService
-            : BaseConcurrentCrudService<
+            : BaseConcurrentSoftDeleteCrudService<
                 SoftDeleteEntity,
                 int,
                 SoftDeleteEntityDto,
@@ -526,7 +516,7 @@ namespace tools_dotnet.Tests.CrudTest
         }
 
         private sealed class LegacyScopedSoftDeleteService
-            : BaseCrudServiceWithKeyWrapper<
+            : BaseSoftDeleteCrudServiceWithKeyWrapper<
                 ScopedSoftDeleteEntity,
                 ScopedSoftDeleteKeyWrapper,
                 ScopedSoftDeleteEntityDto,

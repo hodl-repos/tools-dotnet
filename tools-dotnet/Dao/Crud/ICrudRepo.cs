@@ -14,49 +14,34 @@ namespace tools_dotnet.Dao.Crud
     {
         Task<TIdType> AddAsync(TEntity item, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<TEntity>> GetAllAsync(
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        );
+        Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
         Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filters,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
         Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         );
 
-        Task<TEntity> GetByIdAsync(
-            TIdType id,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        );
+        Task<TEntity> GetByIdAsync(TIdType id, CancellationToken cancellationToken = default);
 
         Task UpdateAsync(TEntity item, CancellationToken cancellationToken = default);
 
         Task RemoveAsync(TIdType id, CancellationToken cancellationToken = default);
-
-        Task RestoreAsync(TIdType id, CancellationToken cancellationToken = default);
-
-        Task HardRemoveAsync(TIdType id, CancellationToken cancellationToken = default);
     }
 }

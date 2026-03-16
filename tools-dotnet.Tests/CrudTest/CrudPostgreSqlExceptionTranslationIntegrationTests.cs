@@ -300,7 +300,8 @@ namespace tools_dotnet.Tests.CrudTest
                 : base(dbContext, mapper, paginationProcessor) { }
         }
 
-        private sealed class SoftDeleteParentRepo : BaseCrudRepo<SoftDeleteParentEntity, int>
+        private sealed class SoftDeleteParentRepo
+            : BaseSoftDeleteCrudRepo<SoftDeleteParentEntity, int>
         {
             public SoftDeleteParentRepo(
                 DbContext dbContext,

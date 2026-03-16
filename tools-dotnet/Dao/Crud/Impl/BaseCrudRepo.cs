@@ -53,21 +53,25 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
 
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.ActiveOnly
+                )
                 .ToListAsync(cancellationToken);
         }
 
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            return await SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            return await SetupQueryModifications(
+                    _dbContext.Set<TEntity>(),
+                    SoftDeleteQueryMode.ActiveOnly
+                )
                 .Where(filters)
                 .ToListAsync(cancellationToken);
         }
@@ -77,14 +81,14 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            return await GetAllAsync(
+            return await GetAllInternalAsync(
                 apiPagination,
                 SoftDeleteQueryMode.ActiveOnly,
                 cancellationToken
             );
         }
 
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
+        protected virtual async Task<IPagedList<TEntity>> GetAllInternalAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -106,22 +110,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             CancellationToken cancellationToken = default
         )
         {
-            return await GetAllAsync(
-                apiPagination,
-                filter,
-                SoftDeleteQueryMode.ActiveOnly,
-                cancellationToken
-            );
-        }
-
-        public virtual async Task<IPagedList<TEntity>> GetAllAsync(
-            IApiPagination apiPagination,
-            Expression<Func<TEntity, bool>> filter,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), SoftDeleteQueryMode.ActiveOnly)
                 .Where(filter)
                 .AsNoTracking();
 
@@ -135,11 +124,10 @@ namespace tools_dotnet.Dao.Crud.Impl
         public virtual async Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         )
         {
-            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), softDeleteQueryMode)
+            var query = SetupQueryModifications(_dbContext.Set<TEntity>(), SoftDeleteQueryMode.ActiveOnly)
                 .Where(filter);
 
             if (throwOnMultipleFound)
@@ -152,12 +140,8 @@ namespace tools_dotnet.Dao.Crud.Impl
 
         public virtual async Task<TEntity> GetByIdAsync(
             TIdType id,
-            SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
-        )
-        {
-            return await GetByIdInternalAsync(id, softDeleteQueryMode, cancellationToken);
-        }
+        ) => await GetByIdInternalAsync(id, SoftDeleteQueryMode.ActiveOnly, cancellationToken);
 
         protected async Task<TEntity> GetByIdInternalAsync(
             TIdType id,
@@ -233,66 +217,6 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
-        public virtual async Task RestoreAsync(
-            TIdType id,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var entity = await GetByIdInternalAsync(
-                id,
-                SoftDeleteQueryMode.IncludeDeleted,
-                cancellationToken
-            );
-
-            if (entity is not IAuditableEntity auditableEntity)
-            {
-                throw CreateSoftDeleteNotSupportedException(nameof(RestoreAsync));
-            }
-
-            if (auditableEntity.DeletedTimestamp == null)
-            {
-                return;
-            }
-
-            auditableEntity.DeletedTimestamp = null;
-            _dbContext.Attach(auditableEntity);
-            _dbContext.Entry(auditableEntity).State = EntityState.Modified;
-
-            try
-            {
-                await _dbContext.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException ex)
-            {
-                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, false);
-                throw;
-            }
-        }
-
-        public virtual async Task HardRemoveAsync(
-            TIdType id,
-            CancellationToken cancellationToken = default
-        )
-        {
-            var entity = await GetByIdInternalAsync(
-                id,
-                SoftDeleteQueryMode.IncludeDeleted,
-                cancellationToken
-            );
-
-            _dbContext.Remove(entity);
-
-            try
-            {
-                await _dbContext.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException ex)
-            {
-                CrudDbUpdateExceptionTranslator.ThrowIfKnown(ex, true);
-                throw;
-            }
-        }
-
         protected virtual IQueryable<TEntity> SetupQueryModifications(
             IQueryable<TEntity> query,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly
@@ -340,4 +264,3 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 }
-
