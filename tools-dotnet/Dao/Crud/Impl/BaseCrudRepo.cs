@@ -216,8 +216,6 @@ namespace tools_dotnet.Dao.Crud.Impl
             if (entity is IAuditableEntity auditableEntity)
             {
                 auditableEntity.DeletedTimestamp = DateTimeOffset.UtcNow;
-                _dbContext.Attach(auditableEntity);
-                _dbContext.Entry(auditableEntity).State = EntityState.Modified;
             }
             else
             {
@@ -281,6 +279,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 SoftDeleteQueryMode.IncludeDeleted,
                 cancellationToken
             );
+
             _dbContext.Remove(entity);
 
             try
@@ -341,3 +340,4 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 }
+
