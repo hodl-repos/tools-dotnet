@@ -65,10 +65,19 @@ public sealed class UserEntity
     [Pagination(Name = "age", CanFilter = true, CanSort = true)]
     public int Age { get; set; }
 
-    [Pagination(Name = "created_at", CanFilter = true, CanSort = true)]
+    [Pagination(
+        Name = "created_at",
+        CanFilter = true,
+        CanSort = true,
+        IsDefaultSorted = true,
+        DefaultSortDescending = true)]
     public DateTimeOffset CreatedAt { get; set; }
 }
 ```
+
+When no `sorts` query parameter is provided, fields marked with `IsDefaultSorted = true`
+are applied automatically. Default sorting is ascending unless
+`DefaultSortDescending = true` is set.
 
 Nested objects can be exposed explicitly:
 

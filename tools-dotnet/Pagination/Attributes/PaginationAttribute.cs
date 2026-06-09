@@ -29,6 +29,16 @@ namespace tools_dotnet.Pagination.Attributes
         public bool CanSortSubProperties { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets whether the member is used as a default sort when no sort is requested.
+        /// </summary>
+        public bool IsDefaultSorted { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether default sorting for the member is descending. Ascending is used when false.
+        /// </summary>
+        public bool DefaultSortDescending { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets an external name for the member used in filter/sort queries.
         /// </summary>
         public string? Name { get; set; }

@@ -65,7 +65,12 @@ namespace tools_dotnet.Tests.PaginationTest
         [Pagination(Name = "external_id", CanFilter = true, CanSort = false)]
         public System.Guid ExternalId { get; set; }
 
-        [Pagination(Name = "created_at", CanFilter = true, CanSort = true)]
+        [Pagination(
+            Name = "created_at",
+            CanFilter = true,
+            CanSort = true,
+            IsDefaultSorted = true,
+            DefaultSortDescending = true)]
         public System.DateTimeOffset? CreatedAt { get; set; }
 
         public string NotDocumented { get; set; } = string.Empty;
@@ -155,6 +160,20 @@ namespace tools_dotnet.Tests.PaginationTest
                 ["name", "-created_at", "status,-created_at"],
                 ignoreOrder: false
             );
+            sortsExtension["fields"]?.AsArray().Single(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "created_at",
+                    StringComparison.Ordinal
+                )
+            )?["isDefaultSorted"]?.GetValue<bool>().ShouldBeTrue();
+            sortsExtension["fields"]?.AsArray().Single(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "created_at",
+                    StringComparison.Ordinal
+                )
+            )?["defaultSortDirection"]?.GetValue<string>().ShouldBe("desc");
             sortsExtension["fields"]?.AsArray().Any(x =>
                 string.Equals(
                     x?["name"]?.GetValue<string>(),

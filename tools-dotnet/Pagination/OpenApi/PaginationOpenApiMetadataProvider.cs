@@ -240,7 +240,9 @@ namespace tools_dotnet.Pagination.OpenApi
                             attribute.CanFilter,
                             attribute.CanSort,
                             operators,
-                            source: "member"
+                            source: "member",
+                            isDefaultSorted: attribute.IsDefaultSorted && attribute.CanSort,
+                            defaultSortDescending: attribute.DefaultSortDescending
                         )
                     );
 

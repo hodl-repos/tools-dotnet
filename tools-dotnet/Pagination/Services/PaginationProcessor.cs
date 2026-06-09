@@ -37,6 +37,8 @@ namespace tools_dotnet.Pagination.Services
             new();
         private readonly ConcurrentDictionary<CustomMethodCacheKey, SortMethodCacheEntry> _customSortMethodCache =
             new();
+        private readonly ConcurrentDictionary<Type, IReadOnlyList<PaginationSortTerm>> _defaultSortCache =
+            new();
 
         /// <summary>
         /// Creates a pagination processor.
@@ -156,7 +158,11 @@ namespace tools_dotnet.Pagination.Services
 
             if (applySorting)
             {
-                query = ApplySorts(query, model.Sorts, dataForCustomMethods);
+                var sorts = model.Sorts.Count == 0
+                    ? GetDefaultSorts(typeof(TEntity))
+                    : model.Sorts;
+
+                query = ApplySorts(query, sorts, dataForCustomMethods);
             }
 
             if (applyPagination)
@@ -540,6 +546,95 @@ namespace tools_dotnet.Pagination.Services
         {
             var skip = (page - 1) * pageSize;
             return query.Skip(skip).Take(pageSize);
+        }
+
+        private IReadOnlyList<PaginationSortTerm> GetDefaultSorts(Type entityType)
+        {
+            return _defaultSortCache.GetOrAdd(entityType, static type =>
+            {
+                var result = new List<PaginationSortTerm>();
+                CollectDefaultSorts(type, prefix: null, result, activePathTypes: new HashSet<Type>());
+                return result;
+            });
+        }
+
+        private static void CollectDefaultSorts(
+            Type modelType,
+            string? prefix,
+            ICollection<PaginationSortTerm> result,
+            ISet<Type> activePathTypes
+        )
+        {
+            if (!activePathTypes.Add(modelType))
+            {
+                return;
+            }
+
+            try
+            {
+                var members = modelType
+                    .GetMembers(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(x =>
+                        x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field
+                    );
+
+                foreach (var member in members)
+                {
+                    var attribute = member.GetCustomAttribute<PaginationAttribute>();
+
+                    if (attribute == null)
+                    {
+                        continue;
+                    }
+
+                    var memberName = string.IsNullOrWhiteSpace(attribute.Name)
+                        ? member.Name
+                        : attribute.Name!;
+                    var fieldPath = string.IsNullOrWhiteSpace(prefix)
+                        ? memberName
+                        : $"{prefix}.{memberName}";
+
+                    if (attribute.IsDefaultSorted && attribute.CanSort)
+                    {
+                        result.Add(new PaginationSortTerm(fieldPath, attribute.DefaultSortDescending));
+                    }
+
+                    if (!attribute.CanSortSubProperties)
+                    {
+                        continue;
+                    }
+
+                    var memberType = GetMemberType(member);
+
+                    if (!CanTraverseDefaultSortMembers(memberType))
+                    {
+                        continue;
+                    }
+
+                    var nestedType = Nullable.GetUnderlyingType(memberType) ?? memberType;
+                    CollectDefaultSorts(nestedType, fieldPath, result, activePathTypes);
+                }
+            }
+            finally
+            {
+                activePathTypes.Remove(modelType);
+            }
+        }
+
+        private static bool CanTraverseDefaultSortMembers(Type memberType)
+        {
+            var type = Nullable.GetUnderlyingType(memberType) ?? memberType;
+
+            return type != typeof(string)
+                && !type.IsPrimitive
+                && !type.IsEnum
+                && type != typeof(decimal)
+                && type != typeof(Guid)
+                && type != typeof(DateTime)
+                && type != typeof(DateTimeOffset)
+                && type != typeof(DateOnly)
+                && type != typeof(TimeOnly)
+                && type != typeof(TimeSpan);
         }
 
         private static IReadOnlyList<object?> ConvertValues(

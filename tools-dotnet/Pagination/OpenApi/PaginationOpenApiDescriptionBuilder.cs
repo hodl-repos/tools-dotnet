@@ -142,13 +142,23 @@ namespace tools_dotnet.Pagination.OpenApi
 
         private static JsonObject BuildBaseFieldObject(PaginationOpenApiFieldDescriptor field)
         {
-            return new JsonObject
+            var fieldObject = new JsonObject
             {
                 ["name"] = field.Name,
                 ["type"] = field.FilterTypeDisplayNameOverride
                     ?? PaginationOpenApiMetadataProvider.GetTypeDisplayName(field.MemberType),
                 ["source"] = field.Source,
             };
+
+            if (field.IsDefaultSorted)
+            {
+                fieldObject["isDefaultSorted"] = true;
+                fieldObject["defaultSortDirection"] = field.DefaultSortDescending
+                    ? "desc"
+                    : "asc";
+            }
+
+            return fieldObject;
         }
 
         private static JsonArray BuildExampleArray(

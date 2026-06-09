@@ -13,7 +13,9 @@ namespace tools_dotnet.Pagination.OpenApi
             bool canSort,
             IReadOnlyList<PaginationOperator> operators,
             string? filterTypeDisplayNameOverride = null,
-            string source = "member"
+            string source = "member",
+            bool isDefaultSorted = false,
+            bool defaultSortDescending = false
         )
         {
             Name = string.IsNullOrWhiteSpace(name)
@@ -33,6 +35,8 @@ namespace tools_dotnet.Pagination.OpenApi
                     nameof(source)
                 )
                 : source;
+            IsDefaultSorted = isDefaultSorted;
+            DefaultSortDescending = defaultSortDescending;
         }
 
         public string Name { get; }
@@ -48,5 +52,9 @@ namespace tools_dotnet.Pagination.OpenApi
         public string? FilterTypeDisplayNameOverride { get; }
 
         public string Source { get; }
+
+        public bool IsDefaultSorted { get; }
+
+        public bool DefaultSortDescending { get; }
     }
 }
