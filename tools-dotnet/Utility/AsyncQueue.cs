@@ -6,9 +6,7 @@ using System.Threading.Tasks.Dataflow;
 namespace tools_dotnet.Utility
 {
     /// <summary>
-    /// Lets a service queue items which are than handled from another service
-    /// the order of the queue remains always the same (FIFO)
-    /// Enqueue will block when there is already an unhandled item
+    /// Provides an in-memory FIFO queue for asynchronous producers and consumers.
     /// </summary>
     public interface IAsyncQueue<T> : IAsyncEnumerable<T>
     {
@@ -19,7 +17,7 @@ namespace tools_dotnet.Utility
         void Enqueue(T item);
 
         /// <summary>
-        /// Gets all items in the queue asynchronously.
+        /// Creates an asynchronous sequence that receives queued items until cancellation.
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An async enumerable of all queued items.</returns>

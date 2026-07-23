@@ -9,25 +9,35 @@ using tools_dotnet.Dao.Entity;
 using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
+using tools_dotnet.Time;
 using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
+    /// <summary>Provides an EF Core CRUD repository base with optimistic concurrency.</summary>
     public abstract class BaseConcurrentCrudRepo<TEntity, TIdType, TConcurrencyToken>
         : IConcurrentCrudRepo<TEntity, TIdType, TConcurrencyToken>
         where TEntity : class, IEntityWithId<TIdType>
         where TIdType : struct
     {
+        /// <summary>Gets the EF Core context used by the repository.</summary>
         protected readonly DbContext _dbContext;
+        /// <summary>Gets the pagination processor applied to repository queries.</summary>
         protected readonly IPaginationProcessor _paginationProcessor;
+        /// <summary>Gets the mapper used for entity and DTO conversion.</summary>
         protected readonly IMapper _mapper;
+        /// <summary>Gets the configuration used to read and compare concurrency tokens.</summary>
         protected readonly CrudConcurrencyConfiguration _concurrencyConfiguration;
+        /// <summary>Gets the clock used to generate UTC timestamps.</summary>
+        protected readonly IClockProvider _clockProvider;
 
+        /// <summary>Initializes a new instance of <c>BaseConcurrentCrudRepo</c>.</summary>
         protected BaseConcurrentCrudRepo(
             DbContext dbContext,
             IMapper mapper,
             IPaginationProcessor paginationProcessor,
-            CrudConcurrencyConfiguration concurrencyConfiguration
+            CrudConcurrencyConfiguration concurrencyConfiguration,
+            IClockProvider? clockProvider = null
         )
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -37,8 +47,10 @@ namespace tools_dotnet.Dao.Crud.Impl
             _concurrencyConfiguration =
                 concurrencyConfiguration
                 ?? throw new ArgumentNullException(nameof(concurrencyConfiguration));
+            _clockProvider = clockProvider ?? SystemClockProvider.Instance;
         }
 
+        /// <summary>Adds a new item asynchronously.</summary>
         public virtual async Task<TIdType> AddAsync(
             TEntity item,
             CancellationToken cancellationToken = default
@@ -58,6 +70,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             CancellationToken cancellationToken = default
         )
@@ -69,6 +82,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
             CancellationToken cancellationToken = default
@@ -82,6 +96,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default
@@ -94,6 +109,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves items using the selected soft-delete query mode and filters.</summary>
         protected virtual async Task<IPagedList<TEntity>> GetAllInternalAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -110,6 +126,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -127,6 +144,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Finds a single item that matches a predicate asynchronously.</summary>
         public virtual async Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
@@ -144,11 +162,13 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves an item by its identifier asynchronously.</summary>
         public virtual async Task<TEntity> GetByIdAsync(
             TIdType id,
             CancellationToken cancellationToken = default
         ) => await GetByIdInternalAsync(id, SoftDeleteQueryMode.ActiveOnly, cancellationToken);
 
+        /// <summary>Retrieves an item by its identifier using the selected soft-delete query mode.</summary>
         protected async Task<TEntity> GetByIdInternalAsync(
             TIdType id,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -169,6 +189,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return entity;
         }
 
+        /// <summary>Updates an existing item asynchronously.</summary>
         public virtual async Task UpdateAsync(
             TEntity item,
             TConcurrencyToken concurrencyToken,
@@ -204,6 +225,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
+        /// <summary>Removes an item asynchronously.</summary>
         public virtual async Task RemoveAsync(
             TIdType id,
             TConcurrencyToken concurrencyToken,
@@ -219,7 +241,7 @@ namespace tools_dotnet.Dao.Crud.Impl
 
             if (entity is IAuditableEntity auditableEntity)
             {
-                auditableEntity.DeletedTimestamp = DateTimeOffset.UtcNow;
+                auditableEntity.DeletedTimestamp = _clockProvider.UtcNow;
                 _dbContext.Attach(auditableEntity);
                 _dbContext.Entry(auditableEntity).State = EntityState.Modified;
             }
@@ -248,6 +270,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
+        /// <summary>Retrieves the current concurrency token for an item asynchronously.</summary>
         public virtual async Task<TConcurrencyToken> GetConcurrencyTokenAsync(
             TIdType id,
             CancellationToken cancellationToken = default
@@ -271,6 +294,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Applies repository-specific modifications to a query.</summary>
         protected virtual IQueryable<TEntity> SetupQueryModifications(
             IQueryable<TEntity> query,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly
@@ -279,6 +303,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return HandleAuditableEntity(query, softDeleteQueryMode);
         }
 
+        /// <summary>Applies audit timestamp and soft-delete state changes to an entity.</summary>
         protected virtual IQueryable<TEntity> HandleAuditableEntity(
             IQueryable<TEntity> query,
             SoftDeleteQueryMode softDeleteQueryMode
@@ -307,6 +332,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return query;
         }
 
+        /// <summary>Creates an exception that reports missing soft-delete support.</summary>
         protected virtual InvalidOperationException CreateSoftDeleteNotSupportedException(
             string operationName
         )

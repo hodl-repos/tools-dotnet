@@ -1,4 +1,5 @@
 using Shouldly;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
 using tools_dotnet.Pagination.Services;
@@ -55,12 +56,12 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
-        public void Apply_ShouldResolveAliasAndRespectCanFilter()
+        public void Apply_ShouldResolveAlias()
         {
             var processor = new PaginationProcessor();
             var model = new PaginationModel
             {
-                Filters = "display_name==Anna,hidden==top"
+                Filters = "display_name==Anna"
             };
 
             var source = new List<AliasedEntity>
@@ -72,6 +73,97 @@ namespace tools_dotnet.Tests.PaginationTest
             var result = processor.Apply(model, source, applySorting: false, applyPagination: false).ToList();
 
             result.Count.ShouldBe(2);
+        }
+
+        [Test]
+        public void Apply_ShouldThrowInvalidFilterException_WhenFilterFieldIsNotFilterable()
+        {
+            var processor = new PaginationProcessor();
+            var model = new PaginationModel
+            {
+                Filters = "hidden==top"
+            };
+
+            var source = new List<AliasedEntity>
+            {
+                new() { Name = "Anna", Hidden = "top" }
+            }.AsQueryable();
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                processor.Apply(model, source, applySorting: false, applyPagination: false).ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.FieldNotFilterable);
+            exception.Field.ShouldBe("hidden");
+            exception.ParameterName.ShouldBe("filters");
+        }
+
+        [Test]
+        public void Apply_ShouldThrowInvalidFilterException_WhenFilterFieldIsUnknown()
+        {
+            var processor = new PaginationProcessor();
+            var model = new PaginationModel
+            {
+                Filters = "missing==top"
+            };
+
+            var source = new List<TestEntity>
+            {
+                new() { Name = "Anna", Age = 20 }
+            }.AsQueryable();
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                processor.Apply(model, source, applySorting: false, applyPagination: false).ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.UnknownField);
+            exception.Field.ShouldBe("missing");
+        }
+
+        [Test]
+        public void Apply_ShouldThrowInvalidFilterException_WhenValueCannotBeParsed()
+        {
+            var processor = new PaginationProcessor();
+            var model = new PaginationModel
+            {
+                Filters = "age>=not-a-number"
+            };
+
+            var source = new List<TestEntity>
+            {
+                new() { Name = "Anna", Age = 20 }
+            }.AsQueryable();
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                processor.Apply(model, source, applySorting: false, applyPagination: false).ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.FailedToParseValue);
+            exception.Field.ShouldBe("age");
+            exception.Value.ShouldBe("not-a-number");
+        }
+
+        [Test]
+        public void Apply_ShouldThrowInvalidFilterException_WhenOperatorCannotBeUsedForProperty()
+        {
+            var processor = new PaginationProcessor();
+            var model = new PaginationModel
+            {
+                Filters = "age@=2"
+            };
+
+            var source = new List<TestEntity>
+            {
+                new() { Name = "Anna", Age = 20 }
+            }.AsQueryable();
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                processor.Apply(model, source, applySorting: false, applyPagination: false).ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.UnsupportedOperator);
+            exception.Field.ShouldBe("age");
+            exception.Operator.ShouldBe(PaginationOperator.Contains.Id);
         }
 
         [Test]
@@ -139,7 +231,7 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
-        public void Apply_ShouldIgnoreNestedFiltering_WhenParentDisallowsSubProperties()
+        public void Apply_ShouldThrowInvalidFilterException_WhenParentDisallowsSubProperties()
         {
             var processor = new PaginationProcessor();
             var model = new PaginationModel
@@ -153,17 +245,63 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 2, BlockedProfile = new NestedProfile { DisplayName = "bob" } }
             }.AsQueryable();
 
-            var result = processor.Apply(model, source, applySorting: false, applyPagination: false).ToList();
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                processor.Apply(model, source, applySorting: false, applyPagination: false).ToList()
+            );
 
-            result.Select(x => x.Id).ShouldBe([1, 2]);
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.FieldNotFilterable);
+            exception.Field.ShouldBe("blocked_profile.display_name");
+        }
+
+        [Test]
+        public void Apply_ShouldThrowInvalidSortException_WhenSortFieldIsUnknown()
+        {
+            var processor = new PaginationProcessor();
+            var model = new PaginationModel
+            {
+                Sorts = "missing"
+            };
+
+            var source = new List<TestEntity>
+            {
+                new() { Name = "Anna", Age = 20 }
+            }.AsQueryable();
+
+            var exception = Should.Throw<InvalidPaginationSortException>(() =>
+                processor.Apply(model, source, applyFiltering: false, applyPagination: false).ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.UnknownField);
+            exception.Field.ShouldBe("missing");
+            exception.ParameterName.ShouldBe("sorts");
+        }
+
+        [Test]
+        public void Apply_ShouldThrowInvalidSortException_WhenSortFieldIsNotSortable()
+        {
+            var source = new List<AliasedEntity>
+            {
+                new() { Name = "Anna", Hidden = "top" }
+            }.AsQueryable();
+
+            var exception = Should.Throw<InvalidPaginationSortException>(() =>
+                new PaginationProcessor()
+                    .Apply(
+                        new PaginationModel { Sorts = "hidden" },
+                        source,
+                        applyFiltering: false,
+                        applyPagination: false
+                    )
+                    .ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.FieldNotSortable);
+            exception.Field.ShouldBe("hidden");
         }
 
         [Test]
         public void Apply_ShouldUseAscendingDefaultSort_WhenNoSortIsRequested()
         {
-            var processor = new PaginationProcessor();
-            var model = new PaginationModel();
-
             var source = new List<DefaultSortEntity>
             {
                 new() { Id = 1, Name = "Clara", Age = 30 },
@@ -171,7 +309,13 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 3, Name = "Bob", Age = 40 }
             }.AsQueryable();
 
-            var result = processor.Apply(model, source, applyFiltering: false, applyPagination: false)
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel(),
+                    source,
+                    applyFiltering: false,
+                    applyPagination: false
+                )
                 .Select(x => x.Id)
                 .ToList();
 
@@ -179,11 +323,8 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
-        public void Apply_ShouldUseDescendingDefaultSort_WhenNoSortIsRequested()
+        public void Apply_ShouldUseDescendingDefaultSort_WhenConfigured()
         {
-            var processor = new PaginationProcessor();
-            var model = new PaginationModel();
-
             var source = new List<DescendingDefaultSortEntity>
             {
                 new() { Id = 1, Age = 30 },
@@ -191,7 +332,13 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 3, Age = 40 }
             }.AsQueryable();
 
-            var result = processor.Apply(model, source, applyFiltering: false, applyPagination: false)
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel(),
+                    source,
+                    applyFiltering: false,
+                    applyPagination: false
+                )
                 .Select(x => x.Id)
                 .ToList();
 
@@ -199,14 +346,32 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
+        public void Apply_ShouldUseMultipleDefaultSorts_InDeclarationOrder()
+        {
+            var source = new List<MultipleDefaultSortEntity>
+            {
+                new() { Id = 1, Group = "b", Rank = 1 },
+                new() { Id = 2, Group = "a", Rank = 1 },
+                new() { Id = 3, Group = "a", Rank = 3 },
+                new() { Id = 4, Group = "b", Rank = 2 }
+            }.AsQueryable();
+
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel(),
+                    source,
+                    applyFiltering: false,
+                    applyPagination: false
+                )
+                .Select(x => x.Id)
+                .ToList();
+
+            result.ShouldBe([3, 2, 4, 1]);
+        }
+
+        [Test]
         public void Apply_ShouldPreferRequestedSort_OverDefaultSort()
         {
-            var processor = new PaginationProcessor();
-            var model = new PaginationModel
-            {
-                Sorts = "age"
-            };
-
             var source = new List<DefaultSortEntity>
             {
                 new() { Id = 1, Name = "Clara", Age = 30 },
@@ -214,19 +379,22 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 3, Name = "Bob", Age = 40 }
             }.AsQueryable();
 
-            var result = processor.Apply(model, source, applyFiltering: false, applyPagination: false)
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel { Sorts = "-age" },
+                    source,
+                    applyFiltering: false,
+                    applyPagination: false
+                )
                 .Select(x => x.Id)
                 .ToList();
 
-            result.ShouldBe([2, 1, 3]);
+            result.ShouldBe([3, 1, 2]);
         }
 
         [Test]
         public void Apply_ShouldIgnoreDefaultSort_WhenCanSortIsFalse()
         {
-            var processor = new PaginationProcessor();
-            var model = new PaginationModel();
-
             var source = new List<BlockedDefaultSortEntity>
             {
                 new() { Id = 1, Name = "Clara" },
@@ -234,7 +402,13 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 3, Name = "Bob" }
             }.AsQueryable();
 
-            var result = processor.Apply(model, source, applyFiltering: false, applyPagination: false)
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel(),
+                    source,
+                    applyFiltering: false,
+                    applyPagination: false
+                )
                 .Select(x => x.Id)
                 .ToList();
 
@@ -244,9 +418,6 @@ namespace tools_dotnet.Tests.PaginationTest
         [Test]
         public void Apply_ShouldUseNestedDefaultSort_WhenParentAllowsSortSubProperties()
         {
-            var processor = new PaginationProcessor();
-            var model = new PaginationModel();
-
             var source = new List<NestedDefaultSortEntity>
             {
                 new() { Id = 1, Profile = new NestedDefaultSortProfile { Rank = 30 } },
@@ -254,11 +425,41 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 3, Profile = new NestedDefaultSortProfile { Rank = 20 } }
             }.AsQueryable();
 
-            var result = processor.Apply(model, source, applyFiltering: false, applyPagination: false)
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel(),
+                    source,
+                    applyFiltering: false,
+                    applyPagination: false
+                )
                 .Select(x => x.Id)
                 .ToList();
 
             result.ShouldBe([2, 3, 1]);
+        }
+
+        [Test]
+        public void Apply_ShouldNotUseDefaultSort_WhenSortingIsDisabled()
+        {
+            var source = new List<DefaultSortEntity>
+            {
+                new() { Id = 1, Name = "Clara", Age = 30 },
+                new() { Id = 2, Name = "Anna", Age = 20 },
+                new() { Id = 3, Name = "Bob", Age = 40 }
+            }.AsQueryable();
+
+            var result = new PaginationProcessor()
+                .Apply(
+                    new PaginationModel(),
+                    source,
+                    applyFiltering: false,
+                    applySorting: false,
+                    applyPagination: false
+                )
+                .Select(x => x.Id)
+                .ToList();
+
+            result.ShouldBe([1, 2, 3]);
         }
 
         private sealed class TestEntity
@@ -273,7 +474,7 @@ namespace tools_dotnet.Tests.PaginationTest
             [Pagination(Name = "display_name", CanFilter = true)]
             public string? Name { get; init; }
 
-            [Pagination(Name = "hidden", CanFilter = false)]
+            [Pagination(Name = "hidden", CanFilter = false, CanSort = false)]
             public string? Hidden { get; init; }
         }
 
@@ -318,11 +519,26 @@ namespace tools_dotnet.Tests.PaginationTest
             public int Age { get; init; }
         }
 
+        private sealed class MultipleDefaultSortEntity
+        {
+            public int Id { get; init; }
+
+            [Pagination(Name = "group", CanSort = true, IsDefaultSorted = true)]
+            public string Group { get; init; } = string.Empty;
+
+            [Pagination(
+                Name = "rank",
+                CanSort = true,
+                IsDefaultSorted = true,
+                DefaultSortDescending = true)]
+            public int Rank { get; init; }
+        }
+
         private sealed class BlockedDefaultSortEntity
         {
             public int Id { get; init; }
 
-            [Pagination(Name = "name", CanFilter = true, CanSort = false, IsDefaultSorted = true)]
+            [Pagination(Name = "name", CanSort = false, IsDefaultSorted = true)]
             public string Name { get; init; } = string.Empty;
         }
 
@@ -340,7 +556,7 @@ namespace tools_dotnet.Tests.PaginationTest
 
         private sealed class NestedDefaultSortProfile
         {
-            [Pagination(Name = "rank", CanFilter = true, CanSort = true, IsDefaultSorted = true)]
+            [Pagination(Name = "rank", CanSort = true, IsDefaultSorted = true)]
             public int Rank { get; init; }
         }
 

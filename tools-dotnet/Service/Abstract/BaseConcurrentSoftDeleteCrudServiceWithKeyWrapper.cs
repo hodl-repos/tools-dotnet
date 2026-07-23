@@ -9,6 +9,7 @@ using tools_dotnet.Dto;
 
 namespace tools_dotnet.Service.Abstract
 {
+    /// <summary>Provides a key-wrapper DTO service base with soft delete and optimistic concurrency.</summary>
     public abstract class BaseConcurrentSoftDeleteCrudServiceWithKeyWrapper<
         TEntity,
         TKeyWrapper,
@@ -41,6 +42,7 @@ namespace tools_dotnet.Service.Abstract
         >
         where TValidator : IValidator<TDto>
     {
+        /// <summary>Initializes a new instance of <c>BaseConcurrentSoftDeleteCrudServiceWithKeyWrapper</c>.</summary>
         protected BaseConcurrentSoftDeleteCrudServiceWithKeyWrapper(
             IMapper mapper,
             TRepo baseRepo,
@@ -48,6 +50,7 @@ namespace tools_dotnet.Service.Abstract
         )
             : base(mapper, baseRepo, validator) { }
 
+        /// <summary>Retrieves active and soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -60,6 +63,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves only soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -72,6 +76,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves an item by its identifier, including soft-deleted items.</summary>
         public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -84,6 +89,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TKeyWrapper keyWrapper,
             TConcurrencyToken concurrencyToken,
@@ -93,6 +99,7 @@ namespace tools_dotnet.Service.Abstract
             await _baseRepo.RestoreAsync(keyWrapper, concurrencyToken, cancellationToken);
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TKeyWrapper keyWrapper,
             TConcurrencyToken concurrencyToken,

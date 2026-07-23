@@ -15,6 +15,7 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
+    /// <summary>Provides a key-wrapper EF Core DTO repository base with soft delete.</summary>
     public abstract class BaseSoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
         : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>,
             ISoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
@@ -23,6 +24,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TDto : class
         where TInputDto : class
     {
+        /// <summary>Initializes a new instance of <c>BaseSoftDeleteCrudDtoRepoWithKeyWrapper</c>.</summary>
         protected BaseSoftDeleteCrudDtoRepoWithKeyWrapper(
             DbContext dbContext,
             IMapper mapper,
@@ -30,6 +32,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor) { }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -39,6 +42,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -50,6 +54,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -66,6 +71,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -84,12 +90,14 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves an item by its identifier asynchronously.</summary>
         public virtual async Task<TEntity> GetByIdAsync(
             TKeyWrapper keyWrapper,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         ) => await GetByIdInternalAsync(keyWrapper, softDeleteQueryMode, cancellationToken);
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -101,6 +109,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -114,6 +123,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -131,6 +141,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -150,6 +161,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves an item by its identifier and projects it to a DTO asynchronously.</summary>
         public virtual async Task<TDto> GetByIdDtoAsync(
             TKeyWrapper keyWrapper,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -173,6 +185,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -204,6 +217,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -228,6 +242,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
+    /// <summary>Provides a key-wrapper EF Core DTO repository base with soft delete.</summary>
     public abstract class BaseSoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
         : BaseSoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>,
             ISoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
@@ -235,6 +250,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
+        /// <summary>Initializes a new instance of <c>BaseSoftDeleteCrudDtoRepoWithKeyWrapper</c>.</summary>
         protected BaseSoftDeleteCrudDtoRepoWithKeyWrapper(
             DbContext dbContext,
             IMapper mapper,

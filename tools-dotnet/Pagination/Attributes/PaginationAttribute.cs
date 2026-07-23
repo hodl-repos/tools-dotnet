@@ -34,7 +34,7 @@ namespace tools_dotnet.Pagination.Attributes
         public bool IsDefaultSorted { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets whether default sorting for the member is descending. Ascending is used when false.
+        /// Gets or sets whether default sorting for the member is descending.
         /// </summary>
         public bool DefaultSortDescending { get; set; } = false;
 

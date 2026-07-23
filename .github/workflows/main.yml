@@ -9,9 +9,9 @@ jobs:
     timeout-minutes: 15
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.2.2
+      uses: actions/checkout@v7.0.1
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: '10.x'
     - name: Set VERSION variable from tag
@@ -25,9 +25,9 @@ jobs:
         fi
         echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
     - name: Test
-      run: dotnet test tools-dotnet.slnx --configuration Release
+      run: dotnet test tools-dotnet.slnx --configuration Release /p:Version=${VERSION}
     - name: Pack
-      run: dotnet pack --configuration Release /p:Version=${VERSION} --output .
+      run: dotnet pack tools-dotnet/tools-dotnet.csproj --configuration Release --no-build /p:Version=${VERSION} --output .
     - name: Push
       run: dotnet nuget push tools-dotnet.${VERSION}.nupkg -s https://api.nuget.org/v3/index.json --api-key ${NUGET_SECRET}
       env:

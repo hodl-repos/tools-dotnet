@@ -10,6 +10,7 @@ using tools_dotnet.Dto;
 
 namespace tools_dotnet.Dao.Crud
 {
+    /// <summary>Describes how a repository reads, applies, and formats concurrency tokens.</summary>
     public sealed class CrudConcurrencyConfiguration
     {
         private static readonly ConcurrentDictionary<
@@ -45,10 +46,13 @@ namespace tools_dotnet.Dao.Crud
                 tokenFormatter ?? throw new ArgumentNullException(nameof(tokenFormatter));
         }
 
+        /// <summary>Gets the entity property that stores the concurrency token.</summary>
         public string EntityPropertyName { get; }
 
+        /// <summary>Gets the request or DTO property that carries the concurrency token.</summary>
         public string RequestPropertyName { get; }
 
+        /// <summary>Creates a configuration that uses the updated timestamp as concurrency token.</summary>
         public static CrudConcurrencyConfiguration UpdatedTimestamp(
             string entityPropertyName = nameof(IChangeTrackingEntity.UpdatedTimestamp),
             string requestPropertyName = nameof(IChangeTrackingDto.UpdatedTimestamp)
@@ -61,6 +65,7 @@ namespace tools_dotnet.Dao.Crud
             );
         }
 
+        /// <summary>Creates a configuration for a SQL Server rowversion token.</summary>
         public static CrudConcurrencyConfiguration SqlServerRowVersion(
             string entityPropertyName = "RowVersion",
             string? requestPropertyName = null
@@ -74,6 +79,7 @@ namespace tools_dotnet.Dao.Crud
             );
         }
 
+        /// <summary>Creates a configuration for a PostgreSQL xmin token.</summary>
         public static CrudConcurrencyConfiguration PostgreSqlXmin(
             string entityPropertyName = "xmin",
             string? requestPropertyName = null
@@ -86,6 +92,7 @@ namespace tools_dotnet.Dao.Crud
             );
         }
 
+        /// <summary>Creates a concurrency configuration for custom entity and request properties.</summary>
         public static CrudConcurrencyConfiguration ForProperty<TConcurrencyToken>(
             string entityPropertyName,
             string? requestPropertyName = null,

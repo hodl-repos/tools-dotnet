@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Models;
 using tools_dotnet.Pagination.Services;
 using tools_dotnet.Paging;
@@ -11,6 +12,7 @@ using tools_dotnet.Paging.Impl;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>Applies filtering, sorting, paging, and DTO projection to queryable sources.</summary>
     public static class QueryableExtensions
     {
         private static PaginationModel CreatePaginationModel(IApiPagination apiPagination)
@@ -24,6 +26,15 @@ namespace tools_dotnet.Utility
             };
         }
 
+        /// <summary>Applies filtering, sorting, and paging to a query.</summary>
+        /// <typeparam name="T">Type of item in the source query.</typeparam>
+        /// <param name="query">Source query.</param>
+        /// <param name="apiPagination">Requested filters, sorts, page, and page size.</param>
+        /// <param name="paginationProcessor">Processor used to translate pagination values.</param>
+        /// <param name="paginationFilterParameters">Optional data passed to custom filter and sort methods.</param>
+        /// <returns>A materialized page and its metadata.</returns>
+        /// <exception cref="InvalidPaginationFilterException">A filter is invalid.</exception>
+        /// <exception cref="InvalidPaginationSortException">A sort is invalid.</exception>
         public static IPagedList<T> SortFilterAndPage<T>(
             this IQueryable<T> query,
             IApiPagination apiPagination,
@@ -90,6 +101,16 @@ namespace tools_dotnet.Utility
             );
         }
 
+        /// <summary>Applies filtering, sorting, and paging and materializes the result asynchronously.</summary>
+        /// <typeparam name="TEntity">Type of entity in the source query.</typeparam>
+        /// <param name="query">Source query.</param>
+        /// <param name="apiPagination">Requested filters, sorts, page, and page size.</param>
+        /// <param name="paginationProcessor">Processor used to translate pagination values.</param>
+        /// <param name="paginationFilterParameters">Optional data passed to custom filter and sort methods.</param>
+        /// <param name="cancellationToken">Token used to cancel database operations.</param>
+        /// <returns>A task containing the materialized page and its metadata.</returns>
+        /// <exception cref="InvalidPaginationFilterException">A filter is invalid.</exception>
+        /// <exception cref="InvalidPaginationSortException">A sort is invalid.</exception>
         public static async Task<IPagedList<TEntity>> SortFilterAndPageAsync<TEntity>(
             this IQueryable<TEntity> query,
             IApiPagination apiPagination,
@@ -157,6 +178,20 @@ namespace tools_dotnet.Utility
             );
         }
 
+        /// <summary>Applies filtering, sorting, paging, and AutoMapper projection asynchronously.</summary>
+        /// <typeparam name="TEntity">Type of entity in the source query.</typeparam>
+        /// <typeparam name="TDto">Type returned for each projected item.</typeparam>
+        /// <param name="query">Source query.</param>
+        /// <param name="apiPagination">Requested filters, sorts, page, and page size.</param>
+        /// <param name="paginationProcessor">Processor used to translate pagination values.</param>
+        /// <param name="mapper">AutoMapper instance used for projection or object mapping.</param>
+        /// <param name="withProjection">Whether to use query projection instead of in-memory mapping.</param>
+        /// <param name="paginationFilterParameters">Optional data passed to custom filter and sort methods.</param>
+        /// <param name="mapperParameters">Optional values supplied to AutoMapper.</param>
+        /// <param name="cancellationToken">Token used to cancel database operations.</param>
+        /// <returns>A task containing the projected page and its metadata.</returns>
+        /// <exception cref="InvalidPaginationFilterException">A filter is invalid.</exception>
+        /// <exception cref="InvalidPaginationSortException">A sort is invalid.</exception>
         public static async Task<IPagedList<TDto>> SortFilterAndPageWithProjectToAsync<
             TEntity,
             TDto

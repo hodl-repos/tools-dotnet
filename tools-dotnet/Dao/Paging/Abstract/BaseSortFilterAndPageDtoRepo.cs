@@ -10,13 +10,18 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Paging.Abstract
 {
+    /// <summary>Provides a repository base for filtered, sorted, and paged DTO projections.</summary>
     public class BaseSortFilterAndPageDtoRepo<TEntity, TDto> : ISortFilterAndPageDtoRepo<TEntity, TDto>
         where TEntity : class
     {
+        /// <summary>Gets the EF Core context used by the repository.</summary>
         protected readonly DbContext _dbContext;
+        /// <summary>Gets the mapper used for entity and DTO conversion.</summary>
         protected readonly IMapper _mapper;
+        /// <summary>Gets the pagination processor applied to repository queries.</summary>
         protected readonly IPaginationProcessor _paginationProcessor;
 
+        /// <summary>Initializes a new instance of <c>BaseSortFilterAndPageDtoRepo</c>.</summary>
         public BaseSortFilterAndPageDtoRepo(DbContext dbContext, IMapper mapper, IPaginationProcessor paginationProcessor)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -24,6 +29,7 @@ namespace tools_dotnet.Dao.Paging.Abstract
             _paginationProcessor = paginationProcessor ?? throw new ArgumentNullException(nameof(paginationProcessor));
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default
@@ -38,6 +44,7 @@ namespace tools_dotnet.Dao.Paging.Abstract
             );
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -53,6 +60,7 @@ namespace tools_dotnet.Dao.Paging.Abstract
             );
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -69,6 +77,7 @@ namespace tools_dotnet.Dao.Paging.Abstract
             );
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default

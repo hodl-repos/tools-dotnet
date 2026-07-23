@@ -3,13 +3,29 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>tools_dotnet</RootNamespace>
     <Nullable>enable</Nullable>
+    <PackageId>tools-dotnet</PackageId>
     <PackageProjectUrl>https://github.com/hodl-repos/tools-dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/hodl-repos/tools-dotnet</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Title>hodl-software.tools-dotnet</Title>
+    <Authors>hodl-software</Authors>
     <Company>hodl-software</Company>
+    <Description>Shared .NET backend building blocks for CRUD repositories and services, EF Core pagination, filtering and sorting, OpenAPI metadata, error handling, and common utilities.</Description>
+    <PackageTags>dotnet;aspnetcore;efcore;crud;pagination;filtering;sorting;openapi</PackageTags>
+    <PackageLicenseExpression>BSL-1.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1570;CS1572;CS1573;CS1574;CS1580;CS1581;CS1584;CS1587;CS1591;CS1711;CS1734;CS1735</WarningsAsErrors>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" Link="README.md" />
+    <None Include="../LICENSE" Pack="true" PackagePath="/" Link="LICENSE" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="Enum.Ext" />

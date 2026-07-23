@@ -4,8 +4,10 @@ using System.Text.Json.Serialization;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>Serializes and deserializes enum names using a configurable casing convention.</summary>
     public sealed class EnumCaseConverter : JsonStringEnumConverter
     {
+        /// <summary>Initializes a new enum converter for the requested string case.</summary>
         public EnumCaseConverter(StringCaseType stringCaseType, bool allowIntegerValues = true)
             : base(EnumCaseNamingPolicy.Get(stringCaseType), allowIntegerValues) { }
     }
@@ -35,13 +37,13 @@ namespace tools_dotnet.Utility
         public override string ConvertName(string name) =>
             _stringCaseType switch
             {
-                StringCaseType.CamelCase => StringCaseExtensions.ToCamelCase(name),
-                StringCaseType.PascalCase => StringCaseExtensions.ToPascalCase(name),
-                StringCaseType.SnakeCase => StringCaseExtensions.ToSnakeCase(name),
-                StringCaseType.KebabCase => StringCaseExtensions.ToKebabCase(name),
-                StringCaseType.UpperKebabCase => StringCaseExtensions.ToCobolCase(name),
-                StringCaseType.ScreamingSnakeCase => StringCaseExtensions.ToScreamingSnakeCase(name),
-                StringCaseType.DotCase => StringCaseExtensions.ToDotCase(name),
+                StringCaseType.CamelCase => StringCaseExtensions.ToCamelCase(name)!,
+                StringCaseType.PascalCase => StringCaseExtensions.ToPascalCase(name)!,
+                StringCaseType.SnakeCase => StringCaseExtensions.ToSnakeCase(name)!,
+                StringCaseType.KebabCase => StringCaseExtensions.ToKebabCase(name)!,
+                StringCaseType.UpperKebabCase => StringCaseExtensions.ToCobolCase(name)!,
+                StringCaseType.ScreamingSnakeCase => StringCaseExtensions.ToScreamingSnakeCase(name)!,
+                StringCaseType.DotCase => StringCaseExtensions.ToDotCase(name)!,
                 StringCaseType.Original => name,
                 _ => throw new ArgumentOutOfRangeException(
                     nameof(_stringCaseType),

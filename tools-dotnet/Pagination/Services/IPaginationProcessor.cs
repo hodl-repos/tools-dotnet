@@ -1,4 +1,6 @@
+using System;
 using System.Linq;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Models;
 
 namespace tools_dotnet.Pagination.Services
@@ -19,6 +21,9 @@ namespace tools_dotnet.Pagination.Services
         /// <param name="applySorting">Whether to apply sort terms.</param>
         /// <param name="applyPagination">Whether to apply skip/take pagination.</param>
         /// <returns>Updated query with requested operations applied.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="model"/> or <paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidPaginationFilterException">A filter is invalid, references an unavailable field, or contains a value that cannot be parsed.</exception>
+        /// <exception cref="InvalidPaginationSortException">A sort references an unavailable field.</exception>
         IQueryable<TEntity> Apply<TEntity>(
             PaginationModel model,
             IQueryable<TEntity> source,

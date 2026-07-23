@@ -8,6 +8,7 @@ using tools_dotnet.Dto;
 
 namespace tools_dotnet.Service.Abstract
 {
+    /// <summary>Provides a validated DTO service base with a soft-delete lifecycle.</summary>
     public abstract class BaseSoftDeleteCrudService<TEntity, TIdType, TDto, TRepo, TValidator>
         : BaseCrudService<TEntity, TIdType, TDto, TRepo, TValidator>,
             ISoftDeleteCrudService<TDto, TIdType>
@@ -17,9 +18,11 @@ namespace tools_dotnet.Service.Abstract
         where TRepo : ISoftDeleteCrudDtoRepo<TEntity, TIdType, TDto>
         where TValidator : IValidator<TDto>
     {
+        /// <summary>Initializes a new instance of <c>BaseSoftDeleteCrudService</c>.</summary>
         protected BaseSoftDeleteCrudService(IMapper mapper, TRepo baseRepo, TValidator validator)
             : base(mapper, baseRepo, validator) { }
 
+        /// <summary>Retrieves active and soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
             CancellationToken cancellationToken = default
         )
@@ -30,6 +33,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves only soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
             CancellationToken cancellationToken = default
         )
@@ -40,6 +44,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves an item by its identifier, including soft-deleted items.</summary>
         public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
             TIdType id,
             CancellationToken cancellationToken = default
@@ -52,6 +57,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TIdType id,
             CancellationToken cancellationToken = default
@@ -60,6 +66,7 @@ namespace tools_dotnet.Service.Abstract
             await _baseRepo.RestoreAsync(id, cancellationToken);
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TIdType id,
             CancellationToken cancellationToken = default

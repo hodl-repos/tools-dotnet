@@ -3,6 +3,7 @@ using tools_dotnet.Dao.KeyWrapper;
 
 namespace tools_dotnet.Dao.Crud
 {
+    /// <summary>Defines concurrency-aware key-wrapper DTO CRUD operations for soft-deletable entities.</summary>
     public interface IConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<
         TEntity,
         TKeyWrapper,
@@ -21,8 +22,10 @@ namespace tools_dotnet.Dao.Crud
         where TEntity : class, IAuditableEntity, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
-        where TInputDto : class { }
+        where TInputDto : class
+    { }
 
+    /// <summary>Defines concurrency-aware key-wrapper DTO CRUD operations for soft-deletable entities.</summary>
     public interface IConcurrentSoftDeleteCrudDtoRepoWithKeyWrapper<
         TEntity,
         TKeyWrapper,
@@ -38,5 +41,6 @@ namespace tools_dotnet.Dao.Crud
             IConcurrentCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TConcurrencyToken>
         where TEntity : class, IAuditableEntity, IEntity
         where TKeyWrapper : class, IKeyWrapper<TEntity>
-        where TDto : class { }
+        where TDto : class
+    { }
 }

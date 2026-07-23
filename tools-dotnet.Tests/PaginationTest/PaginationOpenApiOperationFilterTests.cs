@@ -147,12 +147,31 @@ namespace tools_dotnet.Tests.PaginationTest
                 ignoreOrder: false
             );
 
-            var filterFields = filtersExtension["fields"]?.AsArray().ShouldNotBeNull();
+            var filterFields = filtersExtension["fields"]?.AsArray().ShouldNotBeNull()!;
             filterFields.Count.ShouldBe(6);
             filterFields[0]?["name"]?.GetValue<string>().ShouldBe("age");
             filterFields[0]?["type"]?.GetValue<string>().ShouldBe("number");
             filterFields[0]?["source"]?.GetValue<string>().ShouldBe("member");
             filterFields[0]?["operators"]?.AsArray().Select(GetJsonNodeString).ShouldContain(">=");
+            var defaultSortedFilterField = filterFields.Single(x =>
+                string.Equals(
+                    x?["name"]?.GetValue<string>(),
+                    "created_at",
+                    StringComparison.Ordinal
+                )
+            ).ShouldNotBeNull()!;
+            var defaultSortedFilterOperators = defaultSortedFilterField["operators"]
+                ?.AsArray()
+                .ShouldNotBeNull()!;
+            defaultSortedFilterOperators.Select(GetJsonNodeString).ShouldContain(">=");
+            defaultSortedFilterField["isDefaultSorted"]
+                .ShouldNotBeNull()
+                .GetValue<bool>()
+                .ShouldBeTrue();
+            defaultSortedFilterField["defaultSortDirection"]
+                .ShouldNotBeNull()
+                .GetValue<string>()
+                .ShouldBe("desc");
 
             var sortsExtension = GetPaginationExtension(sortsParameter);
             sortsExtension["mode"]?.GetValue<string>().ShouldBe("sorts");
@@ -160,21 +179,23 @@ namespace tools_dotnet.Tests.PaginationTest
                 ["name", "-created_at", "status,-created_at"],
                 ignoreOrder: false
             );
-            sortsExtension["fields"]?.AsArray().Single(x =>
+            var sortFields = sortsExtension["fields"]?.AsArray().ShouldNotBeNull()!;
+            var defaultSortedSortField = sortFields.Single(x =>
                 string.Equals(
                     x?["name"]?.GetValue<string>(),
                     "created_at",
                     StringComparison.Ordinal
                 )
-            )?["isDefaultSorted"]?.GetValue<bool>().ShouldBeTrue();
-            sortsExtension["fields"]?.AsArray().Single(x =>
-                string.Equals(
-                    x?["name"]?.GetValue<string>(),
-                    "created_at",
-                    StringComparison.Ordinal
-                )
-            )?["defaultSortDirection"]?.GetValue<string>().ShouldBe("desc");
-            sortsExtension["fields"]?.AsArray().Any(x =>
+            ).ShouldNotBeNull()!;
+            defaultSortedSortField["isDefaultSorted"]
+                .ShouldNotBeNull()
+                .GetValue<bool>()
+                .ShouldBeTrue();
+            defaultSortedSortField["defaultSortDirection"]
+                .ShouldNotBeNull()
+                .GetValue<string>()
+                .ShouldBe("desc");
+            sortFields.Any(x =>
                 string.Equals(
                     x?["name"]?.GetValue<string>(),
                     "enabled",
@@ -250,7 +271,7 @@ namespace tools_dotnet.Tests.PaginationTest
             filtersExtension["fields"]?.AsArray().Any(x =>
                 string.Equals(x?["name"]?.GetValue<string>(), "is_adult", StringComparison.Ordinal)
                 && string.Equals(
-                    x["source"]?.GetValue<string>(),
+                    x?["source"]?.GetValue<string>(),
                     "custom",
                     StringComparison.Ordinal
                 )
@@ -264,7 +285,7 @@ namespace tools_dotnet.Tests.PaginationTest
                     StringComparison.Ordinal
                 )
                 && string.Equals(
-                    x["source"]?.GetValue<string>(),
+                    x?["source"]?.GetValue<string>(),
                     "custom",
                     StringComparison.Ordinal
                 )
@@ -402,11 +423,12 @@ namespace tools_dotnet.Tests.PaginationTest
 
         private static JsonObject GetPaginationExtension(IOpenApiParameter parameter)
         {
-            parameter.Extensions.ShouldContainKey(PaginationOpenApiDescriptionBuilder.ExtensionName);
-            parameter.Extensions[PaginationOpenApiDescriptionBuilder.ExtensionName]
+            var extensions = parameter.Extensions.ShouldNotBeNull();
+            extensions.ShouldContainKey(PaginationOpenApiDescriptionBuilder.ExtensionName);
+            extensions[PaginationOpenApiDescriptionBuilder.ExtensionName]
                 .ShouldBeOfType<JsonNodeExtension>();
 
-            return ((JsonNodeExtension)parameter.Extensions[PaginationOpenApiDescriptionBuilder.ExtensionName]).Node
+            return ((JsonNodeExtension)extensions[PaginationOpenApiDescriptionBuilder.ExtensionName]).Node
                 .ShouldBeOfType<JsonObject>();
         }
 

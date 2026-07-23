@@ -15,6 +15,7 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
+    /// <summary>Provides an EF Core DTO repository base with soft delete and optimistic concurrency.</summary>
     public abstract class BaseConcurrentSoftDeleteCrudDtoRepo<
         TEntity,
         TIdType,
@@ -34,6 +35,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
+        /// <summary>Initializes a new instance of <c>BaseConcurrentSoftDeleteCrudDtoRepo</c>.</summary>
         protected BaseConcurrentSoftDeleteCrudDtoRepo(
             DbContext dbContext,
             IMapper mapper,
@@ -42,6 +44,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor, concurrencyConfiguration) { }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -51,6 +54,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -62,6 +66,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -78,6 +83,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -96,6 +102,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Finds a single item that matches a predicate asynchronously.</summary>
         public virtual async Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
@@ -114,12 +121,14 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves an item by its identifier asynchronously.</summary>
         public virtual async Task<TEntity> GetByIdAsync(
             TIdType id,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         ) => await GetByIdInternalAsync(id, softDeleteQueryMode, cancellationToken);
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -131,6 +140,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -146,6 +156,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -163,6 +174,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -182,6 +194,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Finds a single matching item and projects it to a DTO asynchronously.</summary>
         public virtual async Task<TDto?> FindDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
@@ -202,6 +215,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves an item by its identifier and projects it to a DTO asynchronously.</summary>
         public virtual async Task<TDto> GetByIdDtoAsync(
             TIdType id,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -225,6 +239,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TIdType id,
             TConcurrencyToken concurrencyToken,
@@ -271,6 +286,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TIdType id,
             TConcurrencyToken concurrencyToken,
@@ -311,6 +327,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
+    /// <summary>Provides an EF Core DTO repository base with soft delete and optimistic concurrency.</summary>
     public abstract class BaseConcurrentSoftDeleteCrudDtoRepo<
         TEntity,
         TIdType,
@@ -322,6 +339,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
     {
+        /// <summary>Initializes a new instance of <c>BaseConcurrentSoftDeleteCrudDtoRepo</c>.</summary>
         protected BaseConcurrentSoftDeleteCrudDtoRepo(
             DbContext dbContext,
             IMapper mapper,

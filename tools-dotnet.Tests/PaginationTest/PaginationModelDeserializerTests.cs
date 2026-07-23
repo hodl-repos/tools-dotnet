@@ -1,4 +1,5 @@
 using Shouldly;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Models;
 using tools_dotnet.Pagination.Services;
 
@@ -74,11 +75,45 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
-        public void Deserialize_ShouldIgnoreInvalidTerms()
+        public void Deserialize_ShouldThrowInvalidFilterException_WhenFilterTermHasNoOperator()
         {
             var model = new PaginationModel
             {
-                Filters = "name~invalid,age>=21,empty==,==missingField",
+                Filters = "name~invalid"
+            };
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                _deserializer.Deserialize(model)
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.InvalidSyntax);
+            exception.ParameterName.ShouldBe("filters");
+            exception.Value.ShouldBe("name~invalid");
+        }
+
+        [Test]
+        public void Deserialize_ShouldThrowInvalidFilterException_WhenFilterTermHasNoField()
+        {
+            var model = new PaginationModel
+            {
+                Filters = "==missingField"
+            };
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                _deserializer.Deserialize(model)
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.InvalidSyntax);
+            exception.Field.ShouldBeNull();
+            exception.Value.ShouldBe("==missingField");
+        }
+
+        [Test]
+        public void Deserialize_ShouldIgnoreEmptyFilterAndSortTerms()
+        {
+            var model = new PaginationModel
+            {
+                Filters = ",,age>=21,empty==",
                 Sorts = ",,-createdAt"
             };
 

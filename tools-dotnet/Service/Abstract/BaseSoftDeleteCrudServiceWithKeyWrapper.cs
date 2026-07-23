@@ -9,6 +9,7 @@ using tools_dotnet.Dto;
 
 namespace tools_dotnet.Service.Abstract
 {
+    /// <summary>Provides a validated key-wrapper DTO service base with soft delete.</summary>
     public abstract class BaseSoftDeleteCrudServiceWithKeyWrapper<
         TEntity,
         TKeyWrapper,
@@ -23,6 +24,7 @@ namespace tools_dotnet.Service.Abstract
         where TRepo : ISoftDeleteCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
         where TValidator : IValidator<TDto>
     {
+        /// <summary>Initializes a new instance of <c>BaseSoftDeleteCrudServiceWithKeyWrapper</c>.</summary>
         protected BaseSoftDeleteCrudServiceWithKeyWrapper(
             IMapper mapper,
             TRepo baseRepo,
@@ -30,6 +32,7 @@ namespace tools_dotnet.Service.Abstract
         )
             : base(mapper, baseRepo, validator) { }
 
+        /// <summary>Retrieves active and soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -42,6 +45,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves only soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -54,6 +58,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves an item by its identifier, including soft-deleted items.</summary>
         public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -66,6 +71,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -74,6 +80,7 @@ namespace tools_dotnet.Service.Abstract
             await _baseRepo.RestoreAsync(keyWrapper, cancellationToken);
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default

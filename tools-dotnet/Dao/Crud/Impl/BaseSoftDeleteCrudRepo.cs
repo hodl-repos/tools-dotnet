@@ -12,12 +12,14 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
+    /// <summary>Provides an EF Core CRUD repository base with a soft-delete lifecycle.</summary>
     public abstract class BaseSoftDeleteCrudRepo<TEntity, TIdType>
         : BaseCrudRepo<TEntity, TIdType>,
             ISoftDeleteCrudRepo<TEntity, TIdType>
         where TEntity : class, IAuditableEntity, IEntityWithId<TIdType>
         where TIdType : struct
     {
+        /// <summary>Initializes a new instance of <c>BaseSoftDeleteCrudRepo</c>.</summary>
         protected BaseSoftDeleteCrudRepo(
             DbContext dbContext,
             IMapper mapper,
@@ -25,6 +27,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor) { }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
@@ -34,6 +37,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TEntity>> GetAllAsync(
             Expression<Func<TEntity, bool>> filters,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -45,6 +49,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -61,6 +66,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TEntity>> GetAllAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -79,6 +85,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Finds a single item that matches a predicate asynchronously.</summary>
         public virtual async Task<TEntity?> FindAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
@@ -97,12 +104,14 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves an item by its identifier asynchronously.</summary>
         public virtual async Task<TEntity> GetByIdAsync(
             TIdType id,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
             CancellationToken cancellationToken = default
         ) => await GetByIdInternalAsync(id, softDeleteQueryMode, cancellationToken);
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TIdType id,
             CancellationToken cancellationToken = default
@@ -134,6 +143,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             }
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TIdType id,
             CancellationToken cancellationToken = default

@@ -1,4 +1,5 @@
 using Shouldly;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
 using tools_dotnet.Pagination.Services;
@@ -190,11 +191,11 @@ namespace tools_dotnet.Tests.PaginationTest
         }
 
         [Test]
-        public void Apply_ShouldRespectCanSortForMappedProperties()
+        public void Apply_ShouldThrowInvalidSortException_WhenMappedPropertyIsNotSortable()
         {
             var model = new PaginationModel
             {
-                Sorts = "hidden_sort,-created"
+                Sorts = "hidden_sort"
             };
 
             var source = new List<CompatibilityEntity>
@@ -204,9 +205,12 @@ namespace tools_dotnet.Tests.PaginationTest
                 new() { Id = 3, HiddenSort = 2, Created = 2 }
             }.AsQueryable();
 
-            var result = Processor.Apply(model, source, applyPagination: false).Select(x => x.Id).ToList();
+            var exception = Should.Throw<InvalidPaginationSortException>(() =>
+                Processor.Apply(model, source, applyPagination: false).ToList()
+            );
 
-            result.ShouldBe(new[] { 3, 1, 2 });
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.FieldNotSortable);
+            exception.Field.ShouldBe("hidden_sort");
         }
 
         private sealed class CompatibilityEntity

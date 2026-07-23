@@ -3,8 +3,10 @@ using System.Linq;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>Normalizes, resolves, and inspects web URL strings.</summary>
     public static class UrlStringExtensions
     {
+        /// <summary>Resolves a URL against a base URL and normalizes the result.</summary>
         public static string ResolveAndSanitizeWebUrl(string baseUrl, string path)
         {
             Uri baseUri = new Uri(baseUrl);
@@ -13,11 +15,13 @@ namespace tools_dotnet.Utility
             return SanitizeWebUrl(fullUri.ToString());
         }
 
+        /// <summary>Removes empty path segments from a URL.</summary>
         public static string[] TrimEmptyUrlParts(this string[] urlParts)
         {
             return urlParts.Where(e => !string.IsNullOrEmpty(e.Trim().Trim('/'))).ToArray();
         }
 
+        /// <summary>Extracts the host name from a URL.</summary>
         public static string? ExtractDomain(this string url)
         {
             var tmpUrl = url;
@@ -35,6 +39,7 @@ namespace tools_dotnet.Utility
             return null;
         }
 
+        /// <summary>Extracts the host name from a URL.</summary>
         public static string[] ExtractDomain(this string[] urlList)
         {
             return urlList
@@ -44,6 +49,7 @@ namespace tools_dotnet.Utility
                 .ToArray();
         }
 
+        /// <summary>Normalizes a web URL and removes unsupported components.</summary>
         public static string SanitizeWebUrl(this string url)
         {
             if (string.IsNullOrEmpty(url))
@@ -63,6 +69,7 @@ namespace tools_dotnet.Utility
             return url;
         }
 
+        /// <summary>Removes query parameters from a URL.</summary>
         public static string RemoveQueryParams(this string url)
         {
             if (string.IsNullOrEmpty(url))

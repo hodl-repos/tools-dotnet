@@ -6,11 +6,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using tools_dotnet.Dao.Entity;
+using tools_dotnet.Time;
 
 namespace tools_dotnet.Dao.Interceptors
 {
+    /// <summary>Updates auditable entity timestamps during EF Core save operations.</summary>
     public class TimestampsInterceptor : SaveChangesInterceptor
     {
+        private readonly IClockProvider _clockProvider;
+
+        /// <summary>Initializes a new instance of <c>TimestampsInterceptor</c>.</summary>
+        public TimestampsInterceptor(IClockProvider? clockProvider = null)
+        {
+            _clockProvider = clockProvider ?? SystemClockProvider.Instance;
+        }
+
+        /// <summary>Updates entity timestamps before a synchronous EF Core save.</summary>
         public override InterceptionResult<int> SavingChanges(
             DbContextEventData eventData,
             InterceptionResult<int> result
@@ -21,6 +32,7 @@ namespace tools_dotnet.Dao.Interceptors
             return base.SavingChanges(eventData, result);
         }
 
+        /// <summary>Updates entity timestamps before an asynchronous EF Core save.</summary>
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData,
             InterceptionResult<int> result,
@@ -32,7 +44,7 @@ namespace tools_dotnet.Dao.Interceptors
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
-        private static void AdjustTimestamps(ChangeTracker? changeTracker)
+        private void AdjustTimestamps(ChangeTracker? changeTracker)
         {
             if (changeTracker == null)
             {
@@ -46,7 +58,7 @@ namespace tools_dotnet.Dao.Interceptors
                     && (e.State == EntityState.Added || e.State == EntityState.Modified)
                 );
 
-            var now = DateTimeOffset.UtcNow;
+            var now = _clockProvider.UtcNow;
 
             foreach (var entityEntry in entries)
             {

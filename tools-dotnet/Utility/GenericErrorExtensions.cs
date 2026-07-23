@@ -20,33 +20,35 @@ namespace tools_dotnet.Utility
         {
             switch (exception)
             {
-                case var _
-                    when exception is FluentValidation.ValidationException validationException:
+                case FluentValidation.ValidationException validationException:
                     return new ApiValidationError(httpContext.Request.Path, validationException);
 
-                case var _ when exception is ItemNotFoundException:
+                case ItemNotFoundException:
                     return new ApiItemNotFoundError(httpContext.Request.Path);
 
-                case var _ when exception is ConflictingItemException:
+                case ConflictingItemException:
                     return new ApiConflictingItemError(httpContext.Request.Path);
 
-                case var _ when exception is NoPermissionException:
+                case NoPermissionException:
                     return new ApiNoPermissionError(httpContext.Request.Path);
 
-                case var _ when exception is PaymentRequiredException:
+                case PaymentRequiredException:
                     return new ApiPaymentRequiredError(httpContext.Request.Path);
 
-                case var _ when exception is ConcurrentModificationException concurrencyException:
+                case ConcurrentModificationException concurrencyException:
                     return new ApiConcurrentModificationError(
                         httpContext.Request.Path,
                         concurrencyException.DbConcurrencyStamp,
                         concurrencyException.RequestConcurrencyStamp
                     );
 
-                case var _ when exception is DependentItemException dpEx:
+                case PaginationException paginationException:
+                    return new ApiPaginationError(httpContext.Request.Path, paginationException);
+
+                case DependentItemException dependentItemException:
                     return ApiDependentItemError.CreateApiDependentItemError(
                         httpContext.Request.Path,
-                        dpEx.OnRemove
+                        dependentItemException.OnRemove
                     );
             }
 

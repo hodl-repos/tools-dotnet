@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
 
@@ -161,7 +162,6 @@ namespace tools_dotnet.Pagination.Services
                 var sorts = model.Sorts.Count == 0
                     ? GetDefaultSorts(typeof(TEntity))
                     : model.Sorts;
-
                 query = ApplySorts(query, sorts, dataForCustomMethods);
             }
 
@@ -191,16 +191,17 @@ namespace tools_dotnet.Pagination.Services
 
                 foreach (var field in filter.Fields)
                 {
-                    if (
-                        !TryBuildMemberExpression(
-                            parameterExpression,
-                            field,
-                            out var memberExpression
-                        )
-                        || memberExpression == null
-                    )
+                    var memberResolution = TryBuildMemberExpression(
+                        parameterExpression,
+                        field,
+                        out var memberExpression
+                    );
+
+                    if (memberResolution != MemberPathResolution.Found)
                     {
                         if (
+                            memberResolution == MemberPathResolution.Unknown
+                            &&
                             TryApplyCustomFilterMethod(
                                 query,
                                 field,
@@ -211,21 +212,27 @@ namespace tools_dotnet.Pagination.Services
                         )
                         {
                             query = customMethodQuery;
+                            continue;
                         }
 
-                        continue;
+                        if (memberResolution == MemberPathResolution.Forbidden)
+                        {
+                            throw InvalidPaginationFilterException.FieldNotFilterable(field);
+                        }
+
+                        throw InvalidPaginationFilterException.UnknownField(field);
                     }
 
-                    var typedValues = ConvertValues(filter.Values, memberExpression.Type);
-
-                    if (typedValues.Count == 0)
-                    {
-                        continue;
-                    }
+                    var resolvedMemberExpression = memberExpression!;
+                    var typedValues = ConvertValues(
+                        filter.Values,
+                        resolvedMemberExpression.Type,
+                        field
+                    );
 
                     var context = new PaginationFilterExpressionContext(
                         parameterExpression,
-                        memberExpression,
+                        resolvedMemberExpression,
                         filter,
                         typedValues,
                         dataForCustomMethods
@@ -235,7 +242,11 @@ namespace tools_dotnet.Pagination.Services
 
                     if (memberFilterExpression == null)
                     {
-                        continue;
+                        throw InvalidPaginationFilterException.UnsupportedOperator(
+                            field,
+                            filter.Operator,
+                            resolvedMemberExpression.Type
+                        );
                     }
 
                     filterExpression =
@@ -394,17 +405,18 @@ namespace tools_dotnet.Pagination.Services
                 var sourceForSort = orderedQuery ?? currentQuery;
                 var parameterExpression = Expression.Parameter(typeof(TEntity), "entity");
 
-                if (
-                        !TryBuildMemberExpression(
-                            parameterExpression,
-                            sort.Field,
-                            out var memberExpression,
+                var memberResolution = TryBuildMemberExpression(
+                    parameterExpression,
+                    sort.Field,
+                    out var memberExpression,
                         applyFilterRules: false
-                    )
-                    || memberExpression == null
-                )
+                );
+
+                if (memberResolution != MemberPathResolution.Found)
                 {
                     if (
+                        memberResolution == MemberPathResolution.Unknown
+                        &&
                         TryApplyCustomSortMethod(
                             sourceForSort,
                             sort.Field,
@@ -417,12 +429,18 @@ namespace tools_dotnet.Pagination.Services
                     {
                         currentQuery = customSortedQuery;
                         orderedQuery = customSortedQuery as IOrderedQueryable<TEntity>;
+                        continue;
                     }
 
-                    continue;
+                    if (memberResolution == MemberPathResolution.Forbidden)
+                    {
+                        throw InvalidPaginationSortException.FieldNotSortable(sort.Field);
+                    }
+
+                    throw InvalidPaginationSortException.UnknownField(sort.Field);
                 }
 
-                var keySelector = Expression.Lambda(memberExpression, parameterExpression);
+                var keySelector = Expression.Lambda(memberExpression!, parameterExpression);
 
                 if (orderedQuery == null)
                 {
@@ -553,7 +571,12 @@ namespace tools_dotnet.Pagination.Services
             return _defaultSortCache.GetOrAdd(entityType, static type =>
             {
                 var result = new List<PaginationSortTerm>();
-                CollectDefaultSorts(type, prefix: null, result, activePathTypes: new HashSet<Type>());
+                CollectDefaultSorts(
+                    type,
+                    prefix: null,
+                    result,
+                    activePathTypes: new HashSet<Type>()
+                );
                 return result;
             });
         }
@@ -596,7 +619,12 @@ namespace tools_dotnet.Pagination.Services
 
                     if (attribute.IsDefaultSorted && attribute.CanSort)
                     {
-                        result.Add(new PaginationSortTerm(fieldPath, attribute.DefaultSortDescending));
+                        result.Add(
+                            new PaginationSortTerm(
+                                fieldPath,
+                                attribute.DefaultSortDescending
+                            )
+                        );
                     }
 
                     if (!attribute.CanSortSubProperties)
@@ -639,7 +667,8 @@ namespace tools_dotnet.Pagination.Services
 
         private static IReadOnlyList<object?> ConvertValues(
             IReadOnlyList<string> rawValues,
-            Type targetType
+            Type targetType,
+            string field
         )
         {
             var values = new List<object?>();
@@ -649,7 +678,14 @@ namespace tools_dotnet.Pagination.Services
                 if (TryConvertValue(rawValue, targetType, out var converted))
                 {
                     values.Add(converted);
+                    continue;
                 }
+
+                throw InvalidPaginationFilterException.FailedToParseValue(
+                    field,
+                    rawValue,
+                    targetType
+                );
             }
 
             return values;
@@ -782,7 +818,7 @@ namespace tools_dotnet.Pagination.Services
             }
         }
 
-        private bool TryBuildMemberExpression(
+        private MemberPathResolution TryBuildMemberExpression(
             Expression source,
             string fieldPath,
             out Expression? memberExpression,
@@ -798,10 +834,10 @@ namespace tools_dotnet.Pagination.Services
                 static cacheKey => BuildMemberPath(cacheKey)
             );
 
-            if (!memberPath.Found)
+            if (memberPath.Resolution != MemberPathResolution.Found)
             {
                 memberExpression = null;
-                return false;
+                return memberPath.Resolution;
             }
 
             memberExpression = source;
@@ -811,7 +847,7 @@ namespace tools_dotnet.Pagination.Services
                 memberExpression = CreateMemberAccessExpression(memberExpression, member);
             }
 
-            return true;
+            return MemberPathResolution.Found;
         }
 
         private FilterMethodCacheEntry GetCustomFilterMethodEntry<TEntity>(
@@ -853,7 +889,7 @@ namespace tools_dotnet.Pagination.Services
 
             if (fieldSegments.Length == 0)
             {
-                return MemberPathCacheEntry.Missing;
+                return MemberPathCacheEntry.Unknown;
             }
 
             var members = new MemberInfo[fieldSegments.Length];
@@ -863,16 +899,20 @@ namespace tools_dotnet.Pagination.Services
             {
                 var segment = fieldSegments[i];
                 var isLeafSegment = i == fieldSegments.Length - 1;
-                var member = FindMatchingMember(
-                    currentType,
-                    segment,
-                    cacheKey.ApplyFilterRules,
-                    isLeafSegment
+                var candidates = FindMatchingMembers(currentType, segment);
+
+                if (candidates.Count == 0)
+                {
+                    return MemberPathCacheEntry.Unknown;
+                }
+
+                var member = candidates.FirstOrDefault(candidate =>
+                    IsMemberAllowed(candidate, cacheKey.ApplyFilterRules, isLeafSegment)
                 );
 
                 if (member == null)
                 {
-                    return MemberPathCacheEntry.Missing;
+                    return MemberPathCacheEntry.Forbidden;
                 }
 
                 members[i] = member;
@@ -882,25 +922,21 @@ namespace tools_dotnet.Pagination.Services
             return new MemberPathCacheEntry(members);
         }
 
-        private static MemberInfo? FindMatchingMember(
+        private static IReadOnlyList<MemberInfo> FindMatchingMembers(
             Type sourceType,
-            string segment,
-            bool applyFilterRules,
-            bool isLeafSegment
+            string segment
         )
         {
-            var property = sourceType
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
-
-            if (property != null)
-            {
-                return property;
-            }
-
             return sourceType
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Cast<MemberInfo>()
+                .Concat(
+                    sourceType
                 .GetFields(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchesSegment(x, segment, applyFilterRules, isLeafSegment));
+                        .Cast<MemberInfo>()
+                )
+                .Where(x => MatchesSegmentName(x, segment))
+                .ToArray();
         }
 
         private static FilterMethodCacheEntry ResolveCustomFilterMethod(
@@ -1060,11 +1096,9 @@ namespace tools_dotnet.Pagination.Services
             }
         }
 
-        private static bool MatchesSegment(
+        private static bool MatchesSegmentName(
             MemberInfo memberInfo,
-            string segment,
-            bool applyFilterRules,
-            bool isLeafSegment
+            string segment
         )
         {
             var attribute = memberInfo.GetCustomAttribute<PaginationAttribute>();
@@ -1078,10 +1112,16 @@ namespace tools_dotnet.Pagination.Services
                 && !string.IsNullOrWhiteSpace(attribute.Name)
                 && string.Equals(attribute.Name, segment, StringComparison.OrdinalIgnoreCase);
 
-            if (!memberNameMatches && !attributeNameMatches)
-            {
-                return false;
-            }
+            return memberNameMatches || attributeNameMatches;
+        }
+
+        private static bool IsMemberAllowed(
+            MemberInfo memberInfo,
+            bool applyFilterRules,
+            bool isLeafSegment
+        )
+        {
+            var attribute = memberInfo.GetCustomAttribute<PaginationAttribute>();
 
             if (attribute == null)
             {
@@ -1166,16 +1206,37 @@ namespace tools_dotnet.Pagination.Services
 
         private sealed class MemberPathCacheEntry
         {
-            public static readonly MemberPathCacheEntry Missing = new(Array.Empty<MemberInfo>());
+            public static readonly MemberPathCacheEntry Unknown = new(
+                MemberPathResolution.Unknown,
+                Array.Empty<MemberInfo>()
+            );
+            public static readonly MemberPathCacheEntry Forbidden = new(
+                MemberPathResolution.Forbidden,
+                Array.Empty<MemberInfo>()
+            );
 
             public MemberPathCacheEntry(IReadOnlyList<MemberInfo> members)
+                : this(MemberPathResolution.Found, members) { }
+
+            private MemberPathCacheEntry(
+                MemberPathResolution resolution,
+                IReadOnlyList<MemberInfo> members
+            )
             {
+                Resolution = resolution;
                 Members = members;
             }
 
-            public IReadOnlyList<MemberInfo> Members { get; }
+            public MemberPathResolution Resolution { get; }
 
-            public bool Found => Members.Count > 0;
+            public IReadOnlyList<MemberInfo> Members { get; }
+        }
+
+        private enum MemberPathResolution
+        {
+            Found,
+            Unknown,
+            Forbidden,
         }
 
         private sealed class FilterMethodCacheEntry

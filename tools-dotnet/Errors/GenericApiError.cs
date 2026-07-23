@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace tools_dotnet.Errors
 {
+    /// <summary>Represents a serializable API error with status, title, detail, and extensions.</summary>
     public class GenericApiError
     {
         /// <summary>
@@ -67,6 +68,7 @@ namespace tools_dotnet.Errors
         public IDictionary<string, object> Extensions { get; } =
             new Dictionary<string, object>(StringComparer.Ordinal);
 
+        /// <summary>Initializes a new instance of <c>GenericApiError</c>.</summary>
         public GenericApiError()
         {
             Title = "An internal server error occurred";
@@ -74,12 +76,14 @@ namespace tools_dotnet.Errors
             Type = "https://httpstatuses.com/" + Status;
         }
 
+        /// <summary>Initializes a new instance of <c>GenericApiError</c>.</summary>
         public GenericApiError(string instance)
             : this()
         {
             Instance = instance;
         }
 
+        /// <summary>Initializes a new instance of <c>GenericApiError</c>.</summary>
         public GenericApiError(string title, HttpStatusCode statusCode)
         {
             Title = title;
@@ -87,12 +91,14 @@ namespace tools_dotnet.Errors
             Type = "https://httpstatuses.com/" + Status;
         }
 
+        /// <summary>Initializes a new instance of <c>GenericApiError</c>.</summary>
         public GenericApiError(string title, string detail, HttpStatusCode statusCode)
             : this(title, statusCode)
         {
             Detail = detail;
         }
 
+        /// <summary>Initializes a new instance of <c>GenericApiError</c>.</summary>
         public GenericApiError(
             string title,
             string detail,

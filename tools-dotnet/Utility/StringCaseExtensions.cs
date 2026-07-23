@@ -3,26 +3,34 @@ using System.Runtime.CompilerServices;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>Converts strings between common identifier casing conventions.</summary>
     public static class StringCaseExtensions
     {
+        /// <summary>Converts a value to snake_case.</summary>
         public static string? ToSnakeCase(this string? value) =>
             ConvertDelimitedCase(value, '_', upper: false);
 
+        /// <summary>Converts a value to kebab-case.</summary>
         public static string? ToKebabCase(this string? value) =>
             ConvertDelimitedCase(value, '-', upper: false);
 
+        /// <summary>Converts a value to dot.case.</summary>
         public static string? ToDotCase(this string? value) =>
             ConvertDelimitedCase(value, '.', upper: false);
 
+        /// <summary>Converts a value to COBOL-CASE.</summary>
         public static string? ToCobolCase(this string? value) =>
             ConvertDelimitedCase(value, '-', upper: true);
 
+        /// <summary>Converts a value to SCREAMING_SNAKE_CASE.</summary>
         public static string? ToScreamingSnakeCase(this string? value) =>
             ConvertDelimitedCase(value, '_', upper: true);
 
+        /// <summary>Converts a value to PascalCase.</summary>
         public static string? ToPascalCase(this string? value) =>
             ConvertPascalOrCamel(value, pascal: true);
 
+        /// <summary>Converts a value to camelCase.</summary>
         public static string? ToCamelCase(this string? value) =>
             ConvertPascalOrCamel(value, pascal: false);
 

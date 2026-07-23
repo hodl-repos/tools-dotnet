@@ -3,8 +3,8 @@
 `tools-dotnet` is a shared .NET library for common backend patterns in `hodl-software` projects.
 
 > Version notice:
-> `tools_dotnet` `v1.x.y` is for `.NET 9`.
-> `tools_dotnet` `v2.x.y` is for `.NET 10`.
+> `tools-dotnet` `v1.x.y` is for `.NET 9`.
+> `tools-dotnet` `v2.x.y` is for `.NET 10`.
 
 It gives you:
 
@@ -12,7 +12,21 @@ It gives you:
 - Paging, filtering, and sorting for EF Core queries.
 - OpenAPI metadata generation for filter and sort query parameters.
 - API error models and exception helpers.
-- Utility helpers for strings, urls, parsing, streaming, and async queues.
+- Utility helpers for strings, URLs, parsing, streaming, and async queues.
+
+## Installation
+
+```bash
+dotnet add package tools-dotnet
+```
+
+The current `v2.x` package line targets .NET 10. Use the latest `v1.x` release for .NET 9.
+The components are independent, so there is no global `AddToolsDotnet()` registration;
+the sections below show the setup for each feature.
+
+The NuGet package includes this README and the XML API documentation used by IntelliSense.
+Portable symbols are published through the matching `.snupkg`, and Source Link maps them
+to the exact source commit in the [GitHub repository](https://github.com/hodl-repos/tools-dotnet).
 
 ## Package overview
 
@@ -28,11 +42,17 @@ Contains request and response models for paging (`IApiPagination`, `IPagedList`,
 - `tools_dotnet.Pagination`
 Contains parsing and query expression logic for filter/sort/page, plus OpenAPI support.
 
+- `tools_dotnet.Dto`
+Contains common DTO contracts, including ID and change-tracking metadata.
+
 - `tools_dotnet.Enum`
 Contains shared enums such as `SoftDeleteQueryMode` and `StringCaseType`.
 
 - `tools_dotnet.Errors` and `tools_dotnet.Exceptions`
 Contains reusable API error payloads and domain exceptions.
+
+- `tools_dotnet.Time`
+Contains the mockable `IClockProvider` abstraction and its system-clock implementation.
 
 - `tools_dotnet.Utility`
 Contains focused helper extensions and helper classes.
@@ -75,9 +95,10 @@ public sealed class UserEntity
 }
 ```
 
-When no `sorts` query parameter is provided, fields marked with `IsDefaultSorted = true`
-are applied automatically. Default sorting is ascending unless
-`DefaultSortDescending = true` is set.
+When `sorts` is omitted, every sortable member marked with
+`IsDefaultSorted = true` is applied in declaration order. Defaults are
+ascending unless `DefaultSortDescending = true`; an explicit `sorts` value
+replaces all default sorts.
 
 Nested objects can be exposed explicitly:
 
@@ -160,6 +181,36 @@ Supported operators:
 - Starts with: `_=`, `!_=`, `_=*`, `!_=*`
 - Ends with: `_-=`, `!_-=`, `_-=*`, `!_-=*`
 
+You can build the same filter syntax with type-safe member selectors:
+
+```csharp
+using tools_dotnet.Pagination.Builders;
+using tools_dotnet.Pagination.Models;
+
+var pagination = CreateFilter<UserEntity>
+    .And(x => x.Age >= 18)
+    .And(x => x.Name, "alice", PaginationOperator.ContainsCaseInsensitive)
+    .AndAny(
+        [x => x.FirstName, x => x.LastName],
+        "smith",
+        PaginationOperator.ContainsCaseInsensitive)
+    .AndValues(x => x.Status, ["active", "pending"], PaginationOperator.Equal)
+    .ToPaginationModel(page: 1, pageSize: 25);
+```
+
+The expression overload supports simple comparisons (`==`, `!=`, `>`, `>=`, `<`, `<=`).
+Use the explicit overloads for the full `PaginationOperator` set, including string operators.
+Grouped field and multi-value overloads require at least one field and value.
+
+Invalid pagination input fails fast with typed exceptions:
+
+- `InvalidPaginationFilterException` for invalid filter syntax, unknown fields, fields that are not filterable, failed value parsing, or unsupported operator/type combinations.
+- `InvalidPaginationSortException` for unknown fields or fields that are not sortable.
+
+Both exceptions expose `ParameterName`, `ErrorCode`, and contextual fields such as
+`Field`, `Value`, `Operator`, and `TargetType`. Field failures distinguish
+`UnknownField`, `FieldNotFilterable`, and `FieldNotSortable`.
+
 ### SQL Server vs PostgreSQL case-insensitive behavior
 
 Case-insensitive string operators can normalize values using:
@@ -197,6 +248,7 @@ The generated docs now include:
 - readable parameter descriptions with shorter syntax guidance
 - concrete query examples for `filters` and `sorts`
 - machine-readable `x-tools-dotnet-pagination` metadata for tooling/codegen
+- default-sort metadata through `isDefaultSorted` and `defaultSortDirection`
 
 Nested fields are included when parent members allow sub-properties (`CanFilterSubProperties` / `CanSortSubProperties`).
 
@@ -240,6 +292,14 @@ Example output for the `filters` parameter:
         "type": "string",
         "operators": ["==", "==*", "!=", "!=*", "@=", "@=*", "!@=", "!@=*", "_=", "_=*", "!_=", "!_=*", "_-=", "_-=*", "!_-=", "!_-=*"],
         "source": "member"
+      },
+      {
+        "name": "created_at",
+        "type": "date?",
+        "operators": ["==", "!=", ">", ">=", "<", "<="],
+        "source": "member",
+        "isDefaultSorted": true,
+        "defaultSortDirection": "desc"
       }
     ]
   }
@@ -403,6 +463,25 @@ Base services call FluentValidation before `Add`/`Update`.
 `CreatedTimestamp` is treated as immutable after insert.
 On update, incoming `CreatedTimestamp` values are ignored and the original stored value is preserved; only `UpdatedTimestamp` is advanced.
 
+Timestamp generation uses `tools_dotnet.Time.IClockProvider`. By default, the library
+uses `DateTimeOffset.UtcNow` through `SystemClockProvider`; tests can pass a fixed
+clock to `TimestampsInterceptor` and CRUD repo base constructors:
+
+```csharp
+public sealed class FixedClockProvider : IClockProvider
+{
+    public DateTimeOffset UtcNow { get; init; }
+}
+
+var clock = new FixedClockProvider
+{
+    UtcNow = new DateTimeOffset(2030, 1, 2, 3, 4, 5, TimeSpan.Zero)
+};
+
+optionsBuilder.AddInterceptors(new TimestampsInterceptor(clock));
+var repo = new UserRepo(dbContext, mapper, paginationProcessor, clock);
+```
+
 ### Optimistic concurrency
 
 The concurrency-aware CRUD variants add optimistic concurrency using a configurable token:
@@ -496,6 +575,8 @@ token-aware overloads for both updates and deletes.
 - `tools_dotnet.Errors.GenericApiError` and specific error payloads (`ApiValidationError`, `ApiItemNotFoundError`, etc.).
 - `tools_dotnet.Exceptions.*` for domain exceptions.
 - `tools_dotnet.Utility.GenericErrorExtensions.MapExceptionToApiError(...)` to map known exceptions to API errors.
+
+Pagination exceptions map to `ApiPaginationError` with HTTP 400 and extension data for the invalid query parameter, field, value, operator, and error code.
 
 The CRUD base repos also translate common database constraint failures into domain exceptions:
 

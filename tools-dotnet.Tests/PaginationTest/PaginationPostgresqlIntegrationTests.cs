@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Shouldly;
 using Testcontainers.PostgreSql;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Attributes;
 using tools_dotnet.Pagination.Models;
 using tools_dotnet.Pagination.Services;
@@ -15,7 +16,6 @@ namespace tools_dotnet.Tests.PaginationTest
             filterExpressionProviders: [new PostgreSqlPaginationFilterExpressionProvider()]
         );
 
-        private static readonly IReadOnlyList<int> AllIds = [1, 2, 3, 4, 5];
         private static readonly Guid Guid1 = Guid.Parse("11111111-1111-1111-1111-111111111111");
         private static readonly Guid Guid2 = Guid.Parse("22222222-2222-2222-2222-222222222222");
         private static readonly Guid Guid3 = Guid.Parse("33333333-3333-3333-3333-333333333333");
@@ -164,6 +164,11 @@ namespace tools_dotnet.Tests.PaginationTest
         {
             foreach (var op in PaginationOperator.Values.OrderBy(x => x.Id, StringComparer.Ordinal))
             {
+                if (!IsComparableOperator(op))
+                {
+                    continue;
+                }
+
                 yield return new TestCaseData(
                     $"int_value{op.Id}20",
                     ResolveExpectedIdsForIntOperator(op)
@@ -175,6 +180,11 @@ namespace tools_dotnet.Tests.PaginationTest
         {
             foreach (var op in PaginationOperator.Values.OrderBy(x => x.Id, StringComparer.Ordinal))
             {
+                if (!IsComparableOperator(op))
+                {
+                    continue;
+                }
+
                 yield return new TestCaseData(
                     $"long_value{op.Id}200",
                     ResolveExpectedIdsForLongOperator(op)
@@ -186,10 +196,28 @@ namespace tools_dotnet.Tests.PaginationTest
         {
             foreach (var op in PaginationOperator.Values.OrderBy(x => x.Id, StringComparer.Ordinal))
             {
+                if (!IsComparableOperator(op))
+                {
+                    continue;
+                }
+
                 yield return new TestCaseData(
                     $"external_id{op.Id}{Guid2}",
                     ResolveExpectedIdsForGuidOperator(op)
                 );
+            }
+        }
+
+        public static IEnumerable<TestCaseData> UnsupportedNonStringOperatorCases()
+        {
+            foreach (var op in PaginationOperator.Values.OrderBy(x => x.Id, StringComparer.Ordinal))
+            {
+                if (IsComparableOperator(op))
+                {
+                    continue;
+                }
+
+                yield return new TestCaseData($"int_value{op.Id}20", "int_value", op.Id);
             }
         }
 
@@ -219,6 +247,31 @@ namespace tools_dotnet.Tests.PaginationTest
         {
             var result = await ApplyFilterAsync(filters);
             result.ShouldBe(expectedIds);
+        }
+
+        [TestCaseSource(nameof(UnsupportedNonStringOperatorCases))]
+        public async Task Apply_ShouldThrowInvalidFilterException_ForUnsupportedNonStringOperators(
+            string filters,
+            string field,
+            string op
+        )
+        {
+            await using var dbContext = new PaginationPostgresqlTestDbContext(_dbContextOptions);
+
+            var exception = Should.Throw<InvalidPaginationFilterException>(() =>
+                Processor
+                    .Apply(
+                        new PaginationModel { Filters = filters },
+                        dbContext.Entities.AsNoTracking(),
+                        applySorting: false,
+                        applyPagination: false
+                    )
+                    .ToList()
+            );
+
+            exception.ErrorCode.ShouldBe(PaginationErrorCode.UnsupportedOperator);
+            exception.Field.ShouldBe(field);
+            exception.Operator.ShouldBe(op);
         }
 
         private async Task<IReadOnlyList<int>> ApplyFilterAsync(string filters)
@@ -268,7 +321,7 @@ namespace tools_dotnet.Tests.PaginationTest
                 return [1, 2];
             }
 
-            return [.. AllIds];
+            throw new ArgumentOutOfRangeException(nameof(op), op, "Unsupported int operator.");
         }
 
         private static int[] ResolveExpectedIdsForLongOperator(PaginationOperator op)
@@ -303,7 +356,7 @@ namespace tools_dotnet.Tests.PaginationTest
                 return [1, 2];
             }
 
-            return [.. AllIds];
+            throw new ArgumentOutOfRangeException(nameof(op), op, "Unsupported long operator.");
         }
 
         private static int[] ResolveExpectedIdsForGuidOperator(PaginationOperator op)
@@ -338,7 +391,17 @@ namespace tools_dotnet.Tests.PaginationTest
                 return [1, 2];
             }
 
-            return [.. AllIds];
+            throw new ArgumentOutOfRangeException(nameof(op), op, "Unsupported Guid operator.");
+        }
+
+        private static bool IsComparableOperator(PaginationOperator op)
+        {
+            return op == PaginationOperator.Equal
+                || op == PaginationOperator.NotEquals
+                || op == PaginationOperator.GreaterThan
+                || op == PaginationOperator.GreaterThanOrEqual
+                || op == PaginationOperator.LessThan
+                || op == PaginationOperator.LessThanOrEqual;
         }
 
         private static DbContextOptions<PaginationPostgresqlTestDbContext> CreateDbContextOptions(
@@ -398,4 +461,3 @@ namespace tools_dotnet.Tests.PaginationTest
         }
     }
 }
-

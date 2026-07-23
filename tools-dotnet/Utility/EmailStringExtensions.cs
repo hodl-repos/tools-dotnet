@@ -26,7 +26,8 @@ namespace tools_dotnet.Utility
         }
 
         /// <summary>
-        /// extracts a single e-mail addresses, removing all metadata like beautified name withing <>
+        /// Extracts email addresses while removing display-name metadata such as text in
+        /// &lt;angle brackets&gt;.
         /// </summary>
         public static string[] ExtractEmailAdresses(this string input)
         {
@@ -42,6 +43,7 @@ namespace tools_dotnet.Utility
             return collection.Select(e => e.Address).ToArray();
         }
 
+        /// <summary>Returns a normalized email address when the input can be parsed.</summary>
         public static string? TryExtractEmail(this string input)
         {
             var canParseEmail = MailAddress.TryCreate(input, out var result);

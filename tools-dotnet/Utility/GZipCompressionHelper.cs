@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace tools_dotnet.Utility
 {
+    /// <summary>Compresses and decompresses byte and string payloads with GZip.</summary>
     public static class GZipCompressionHelper
     {
+        /// <summary>Compresses a payload with GZip asynchronously.</summary>
         public static async Task<byte[]> CompressAsync(this byte[] bytes)
         {
             using var memoryStream = new MemoryStream();
@@ -19,6 +21,7 @@ namespace tools_dotnet.Utility
             return memoryStream.ToArray();
         }
 
+        /// <summary>Compresses a payload with GZip asynchronously.</summary>
         public static async Task<byte[]> CompressAsync(this string payload)
         {
             var bytes = Encoding.UTF8.GetBytes(payload);
@@ -26,6 +29,7 @@ namespace tools_dotnet.Utility
             return await CompressAsync(bytes);
         }
 
+        /// <summary>Decompresses a GZip payload asynchronously.</summary>
         public static async Task<byte[]> DecompressAsync(this byte[] bytes)
         {
             using var memoryStream = new MemoryStream(bytes);
@@ -38,12 +42,14 @@ namespace tools_dotnet.Utility
             return outputStream.ToArray();
         }
 
+        /// <summary>Decompresses a GZip payload to text asynchronously.</summary>
         public static async Task<string> DecompressToStringAsync(this byte[] bytes)
         {
             var decompressedBytes = await DecompressAsync(bytes);
             return Encoding.UTF8.GetString(decompressedBytes);
         }
 
+        /// <summary>Compresses text and returns the payload as base64 asynchronously.</summary>
         public static async Task<string> CompressStringToBase64Async(this string payload)
         {
             var byteContent = Encoding.UTF8.GetBytes(payload);
@@ -51,6 +57,7 @@ namespace tools_dotnet.Utility
             return Convert.ToBase64String(await byteContent.CompressAsync());
         }
 
+        /// <summary>Decompresses a base64-encoded GZip payload to text asynchronously.</summary>
         public static async Task<string> DecompressStringFromBase64Async(this string base64String)
         {
             var byteContent = await Convert.FromBase64String(base64String).DecompressAsync();

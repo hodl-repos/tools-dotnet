@@ -15,6 +15,7 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
+    /// <summary>Provides a key-wrapper EF Core CRUD repository base with DTO projection.</summary>
     public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
         : BaseCrudRepoWithKeyWrapper<TEntity, TKeyWrapper>,
             ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TInputDto>
@@ -23,6 +24,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TDto : class
         where TInputDto : class
     {
+        /// <summary>Initializes a new instance of <c>BaseCrudDtoRepoWithKeyWrapper</c>.</summary>
         protected BaseCrudDtoRepoWithKeyWrapper(
             DbContext dbContext,
             IMapper mapper,
@@ -30,6 +32,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor) { }
 
+        /// <summary>Adds a new item asynchronously.</summary>
         public virtual async Task<TKeyWrapper> AddAsync(
             TKeyWrapper keyWrapper,
             TInputDto item,
@@ -41,6 +44,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await AddAsync(keyWrapper, entity, cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             CancellationToken cancellationToken = default
         )
@@ -54,6 +58,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             CancellationToken cancellationToken = default
@@ -66,6 +71,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default
@@ -78,6 +84,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves and projects items using the selected soft-delete query mode and filters.</summary>
         protected virtual async Task<IPagedList<TDto>> GetAllDtoInternalAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -95,6 +102,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -113,6 +121,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves an item by its identifier and projects it to a DTO asynchronously.</summary>
         public virtual async Task<TDto> GetByIdDtoAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -135,6 +144,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
+        /// <summary>Updates an existing item asynchronously.</summary>
         public virtual async Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TInputDto item,
@@ -160,6 +170,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
+    /// <summary>Provides a key-wrapper EF Core CRUD repository base with DTO projection.</summary>
     public abstract class BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
         : BaseCrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto, TDto>,
             ICrudDtoRepoWithKeyWrapper<TEntity, TKeyWrapper, TDto>
@@ -167,6 +178,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TKeyWrapper : class, IKeyWrapper<TEntity>
         where TDto : class
     {
+        /// <summary>Initializes a new instance of <c>BaseCrudDtoRepoWithKeyWrapper</c>.</summary>
         protected BaseCrudDtoRepoWithKeyWrapper(
             DbContext dbContext,
             IMapper mapper,

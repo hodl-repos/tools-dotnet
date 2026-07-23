@@ -1,9 +1,12 @@
 namespace tools_dotnet.Errors
 {
+    /// <summary>Represents an API error caused by an optimistic concurrency conflict.</summary>
     public class ApiConcurrentModificationError : GenericApiError
     {
+        /// <summary>Initializes a new instance of <c>ApiConcurrentModificationError</c>.</summary>
         protected ApiConcurrentModificationError() { }
 
+        /// <summary>Initializes a new instance of <c>ApiConcurrentModificationError</c>.</summary>
         public ApiConcurrentModificationError(
             string instance,
             string? dbConcurrencyStamp = null,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using tools_dotnet.Exceptions;
 using tools_dotnet.Pagination.Models;
 
 namespace tools_dotnet.Pagination.Services
@@ -67,7 +68,7 @@ namespace tools_dotnet.Pagination.Services
 
                 if (!TryFindOperator(term, out var operatorToken, out var operatorIndex))
                 {
-                    continue;
+                    throw InvalidPaginationFilterException.InvalidSyntax(term);
                 }
 
                 var rawFields = NormalizeFieldsSegment(term[..operatorIndex]);
@@ -80,7 +81,7 @@ namespace tools_dotnet.Pagination.Services
 
                 if (fields.Length == 0)
                 {
-                    continue;
+                    throw InvalidPaginationFilterException.InvalidSyntax(term);
                 }
 
                 if (
@@ -88,7 +89,7 @@ namespace tools_dotnet.Pagination.Services
                     || @operator == null
                 )
                 {
-                    continue;
+                    throw InvalidPaginationFilterException.InvalidSyntax(term);
                 }
 
                 var values = SplitWithEscaping(rawValues, '|')
@@ -173,7 +174,7 @@ namespace tools_dotnet.Pagination.Services
             {
                 var index = term.IndexOf(token, StringComparison.Ordinal);
 
-                if (index <= 0)
+                if (index < 0)
                 {
                     continue;
                 }

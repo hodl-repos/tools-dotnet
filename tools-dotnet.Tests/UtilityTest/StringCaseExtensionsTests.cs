@@ -10,13 +10,13 @@ namespace tools_dotnet.Tests.UtilityTest
     {
         public sealed record ConversionExpectation(
             string? Input,
-            string SnakeCase,
-            string KebabCase,
-            string DotCase,
-            string CobolCase,
-            string ScreamingSnakeCase,
-            string PascalCase,
-            string CamelCase
+            string? SnakeCase,
+            string? KebabCase,
+            string? DotCase,
+            string? CobolCase,
+            string? ScreamingSnakeCase,
+            string? PascalCase,
+            string? CamelCase
         );
 
         private static readonly ConversionExpectation[] Cases =
@@ -174,4 +174,3 @@ namespace tools_dotnet.Tests.UtilityTest
         }
     }
 }
-

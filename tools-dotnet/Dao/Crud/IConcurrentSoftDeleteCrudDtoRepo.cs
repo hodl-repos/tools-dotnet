@@ -4,6 +4,7 @@ using tools_dotnet.Dto;
 
 namespace tools_dotnet.Dao.Crud
 {
+    /// <summary>Defines concurrency-aware DTO CRUD operations for soft-deletable entities.</summary>
     public interface IConcurrentSoftDeleteCrudDtoRepo<
         TEntity,
         TIdType,
@@ -16,8 +17,10 @@ namespace tools_dotnet.Dao.Crud
         where TEntity : class, IAuditableEntity, IEntityWithId<TIdType>
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
-        where TInputDto : IDtoWithId<TIdType> { }
+        where TInputDto : IDtoWithId<TIdType>
+    { }
 
+    /// <summary>Defines concurrency-aware DTO CRUD operations for soft-deletable entities.</summary>
     public interface IConcurrentSoftDeleteCrudDtoRepo<
         TEntity,
         TIdType,
@@ -27,5 +30,6 @@ namespace tools_dotnet.Dao.Crud
             IConcurrentCrudDtoRepo<TEntity, TIdType, TDto, TConcurrencyToken>
         where TEntity : class, IAuditableEntity, IEntityWithId<TIdType>
         where TIdType : struct
-        where TDto : class, IDtoWithId<TIdType> { }
+        where TDto : class, IDtoWithId<TIdType>
+    { }
 }

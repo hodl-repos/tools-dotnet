@@ -8,6 +8,7 @@ using tools_dotnet.Dto;
 
 namespace tools_dotnet.Service.Abstract
 {
+    /// <summary>Provides a validated DTO service base with soft delete and optimistic concurrency.</summary>
     public abstract class BaseConcurrentSoftDeleteCrudService<
         TEntity,
         TIdType,
@@ -28,6 +29,7 @@ namespace tools_dotnet.Service.Abstract
         >
         where TValidator : IValidator<TDto>
     {
+        /// <summary>Initializes a new instance of <c>BaseConcurrentSoftDeleteCrudService</c>.</summary>
         protected BaseConcurrentSoftDeleteCrudService(
             IMapper mapper,
             TRepo baseRepo,
@@ -35,6 +37,7 @@ namespace tools_dotnet.Service.Abstract
         )
             : base(mapper, baseRepo, validator) { }
 
+        /// <summary>Retrieves active and soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllIncludingDeletedAsync(
             CancellationToken cancellationToken = default
         )
@@ -45,6 +48,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves only soft-deleted items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDeletedAsync(
             CancellationToken cancellationToken = default
         )
@@ -55,6 +59,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves an item by its identifier, including soft-deleted items.</summary>
         public virtual async Task<TDto> GetByIdIncludingDeletedAsync(
             TIdType id,
             CancellationToken cancellationToken = default
@@ -67,6 +72,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Restores a soft-deleted item asynchronously.</summary>
         public virtual async Task RestoreAsync(
             TIdType id,
             TConcurrencyToken concurrencyToken,
@@ -76,6 +82,7 @@ namespace tools_dotnet.Service.Abstract
             await _baseRepo.RestoreAsync(id, concurrencyToken, cancellationToken);
         }
 
+        /// <summary>Permanently removes an item asynchronously.</summary>
         public virtual async Task HardRemoveAsync(
             TIdType id,
             TConcurrencyToken concurrencyToken,

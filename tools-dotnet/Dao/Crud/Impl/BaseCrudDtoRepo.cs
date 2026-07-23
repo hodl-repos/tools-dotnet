@@ -15,6 +15,7 @@ using tools_dotnet.Utility;
 
 namespace tools_dotnet.Dao.Crud.Impl
 {
+    /// <summary>Provides an EF Core CRUD repository base with AutoMapper DTO projection.</summary>
     public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
         : BaseCrudRepo<TEntity, TIdType>,
             ICrudDtoRepo<TEntity, TIdType, TDto, TInputDto>
@@ -23,6 +24,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TDto : class, IDtoWithId<TIdType>
         where TInputDto : IDtoWithId<TIdType>
     {
+        /// <summary>Initializes a new instance of <c>BaseCrudDtoRepo</c>.</summary>
         protected BaseCrudDtoRepo(
             DbContext dbContext,
             IMapper mapper,
@@ -30,6 +32,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         )
             : base(dbContext, mapper, paginationProcessor) { }
 
+        /// <summary>Adds a new item asynchronously.</summary>
         public virtual async Task<TIdType> AddAsync(
             TInputDto item,
             CancellationToken cancellationToken = default
@@ -40,6 +43,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await AddAsync(entity, cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             CancellationToken cancellationToken = default
         )
@@ -53,6 +57,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             CancellationToken cancellationToken = default
@@ -67,6 +72,7 @@ namespace tools_dotnet.Dao.Crud.Impl
                 .ToListAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             CancellationToken cancellationToken = default
@@ -79,6 +85,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves and projects items using the selected soft-delete query mode and filters.</summary>
         protected virtual async Task<IPagedList<TDto>> GetAllDtoInternalAsync(
             IApiPagination apiPagination,
             SoftDeleteQueryMode softDeleteQueryMode = SoftDeleteQueryMode.ActiveOnly,
@@ -96,6 +103,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Retrieves all available items projected to DTOs asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllDtoAsync(
             IApiPagination apiPagination,
             Expression<Func<TEntity, bool>> filter,
@@ -114,6 +122,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             );
         }
 
+        /// <summary>Finds a single matching item and projects it to a DTO asynchronously.</summary>
         public virtual async Task<TDto?> FindDtoAsync(
             Expression<Func<TEntity, bool>> filter,
             bool throwOnMultipleFound = true,
@@ -133,6 +142,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return await query.FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <summary>Retrieves an item by its identifier and projects it to a DTO asynchronously.</summary>
         public virtual async Task<TDto> GetByIdDtoAsync(
             TIdType id,
             CancellationToken cancellationToken = default
@@ -155,6 +165,7 @@ namespace tools_dotnet.Dao.Crud.Impl
             return dto;
         }
 
+        /// <summary>Updates an existing item asynchronously.</summary>
         public virtual async Task UpdateAsync(
             TInputDto item,
             CancellationToken cancellationToken = default
@@ -175,6 +186,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         }
     }
 
+    /// <summary>Provides an EF Core CRUD repository base with AutoMapper DTO projection.</summary>
     public abstract class BaseCrudDtoRepo<TEntity, TIdType, TDto>
         : BaseCrudDtoRepo<TEntity, TIdType, TDto, TDto>,
             ICrudDtoRepo<TEntity, TIdType, TDto>
@@ -182,6 +194,7 @@ namespace tools_dotnet.Dao.Crud.Impl
         where TIdType : struct
         where TDto : class, IDtoWithId<TIdType>
     {
+        /// <summary>Initializes a new instance of <c>BaseCrudDtoRepo</c>.</summary>
         protected BaseCrudDtoRepo(
             DbContext dbContext,
             IMapper mapper,

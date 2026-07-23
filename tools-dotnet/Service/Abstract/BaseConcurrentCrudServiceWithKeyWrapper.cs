@@ -11,6 +11,7 @@ using tools_dotnet.Paging;
 
 namespace tools_dotnet.Service.Abstract
 {
+    /// <summary>Provides a concurrency-aware key-wrapper CRUD service base for DTOs.</summary>
     public abstract class BaseConcurrentCrudServiceWithKeyWrapper<
         TEntity,
         TKeyWrapper,
@@ -30,10 +31,14 @@ namespace tools_dotnet.Service.Abstract
         >
         where TValidator : IValidator<TDto>
     {
+        /// <summary>Gets the mapper used for entity and DTO conversion.</summary>
         protected readonly IMapper _mapper;
+        /// <summary>Gets the repository used by the service.</summary>
         protected readonly TRepo _baseRepo;
+        /// <summary>Gets the validator applied before write operations.</summary>
         protected readonly TValidator _validator;
 
+        /// <summary>Initializes a new instance of <c>BaseConcurrentCrudServiceWithKeyWrapper</c>.</summary>
         protected BaseConcurrentCrudServiceWithKeyWrapper(
             IMapper mapper,
             TRepo baseRepo,
@@ -51,6 +56,7 @@ namespace tools_dotnet.Service.Abstract
         /// </summary>
         protected abstract Task SetAndValidateKeyAsync(TDto item, TKeyWrapper keyWrapper);
 
+        /// <summary>Applies and validates the key-wrapper values on an item asynchronously.</summary>
         protected virtual Task SetAndValidateKeyAsync(
             TDto item,
             TKeyWrapper keyWrapper,
@@ -60,6 +66,7 @@ namespace tools_dotnet.Service.Abstract
             return SetAndValidateKeyAsync(item, keyWrapper);
         }
 
+        /// <summary>Adds a new item asynchronously.</summary>
         public virtual async Task<TKeyWrapper> AddAsync(
             TKeyWrapper keyWrapper,
             TDto item,
@@ -73,6 +80,7 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.AddAsync(keyWrapper, item, cancellationToken);
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IEnumerable<TDto>> GetAllAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -84,6 +92,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves all available items asynchronously.</summary>
         public virtual async Task<IPagedList<TDto>> GetAllAsync(
             IApiPagination apiPagination,
             TKeyWrapper keyWrapper,
@@ -97,6 +106,7 @@ namespace tools_dotnet.Service.Abstract
             );
         }
 
+        /// <summary>Retrieves an item by its identifier asynchronously.</summary>
         public virtual async Task<TDto> GetByIdAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -105,6 +115,7 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetByIdDtoAsync(keyWrapper, cancellationToken: cancellationToken);
         }
 
+        /// <summary>Retrieves the current concurrency token for an item asynchronously.</summary>
         public virtual async Task<TConcurrencyToken> GetConcurrencyTokenAsync(
             TKeyWrapper keyWrapper,
             CancellationToken cancellationToken = default
@@ -113,6 +124,7 @@ namespace tools_dotnet.Service.Abstract
             return await _baseRepo.GetConcurrencyTokenAsync(keyWrapper, cancellationToken);
         }
 
+        /// <summary>Updates an existing item asynchronously.</summary>
         public virtual async Task UpdateAsync(
             TKeyWrapper keyWrapper,
             TDto item,
@@ -125,6 +137,7 @@ namespace tools_dotnet.Service.Abstract
             await _baseRepo.UpdateAsync(keyWrapper, item, concurrencyToken, cancellationToken);
         }
 
+        /// <summary>Removes an item asynchronously.</summary>
         public virtual async Task RemoveAsync(
             TKeyWrapper keyWrapper,
             TConcurrencyToken concurrencyToken,
